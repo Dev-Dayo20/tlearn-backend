@@ -1,0 +1,139 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// SUPER_ADMIN 
+// ============================================
+model SuperAdmin {
+  id        Int         @id @default(autoincrement())
+  email     String      @unique
+  name      String 
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+}
+
+// ============================================
+// SCHOOL MODEL
+// ============================================
+model School {
+  id        Int      @id @default(autoincrement())  // Auto-incrementing ID (1, 2, 3...)
+  name      String                                   // School name
+  subdomain      String   @unique                         // For subdomain (e.g., "greenfield")
+  logo      String?                                  // Logo URL (optional)
+  email     String                                   // Contact email
+  address   String?                                  // Address (optional)
+  isActive  Boolean  @default(true)                  // Is school active?
+  createdAt DateTime @default(now())                 // When created
+  updatedAt DateTime @updatedAt                      // Auto-updates on changes
+
+  users     User[]                                   // Many users
+  classes   Class[]                                  // Many classes
+  videos    Video[]                                  // Many videos
+}
+
+// ============================================
+// USER MODEL (Students, Admins)
+// ============================================
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique                         // No duplicate emails
+  password  String                                   // Hashed password
+  role      Role     @default(STUDENT)               // Default role is STUDENT
+  studentId String?                                  // e.g., "GFS/2024/001" (optional)
+  schoolId  Int                                      // Foreign key to School
+  classId   Int?                                     // Foreign key to Class (optional)
+  arm       String?                                  // e.g., "Lilac", "Butterfly" (optional)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  school    School   @relation(fields: [schoolId], references: [id])  // Belongs to one school
+  class     Class?   @relation(fields: [classId], references: [id])   // Belongs to one class (optional)
+
+  // Indexes for faster queries
+  @@index([schoolId])  // Fast lookups by school
+  @@index([classId])   // Fast lookups by class
+}
+
+// Enum for user roles
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+// ============================================
+// CLASS MODEL
+// ============================================
+model Class {
+  id        Int      @id @default(autoincrement())
+  grade     String                                   // e.g., "Grade 1", "Grade 2"
+  arms      String[]                                 // Array: ["Lilac", "Butterfly", "Rose"]
+  schoolId  Int                                      // Foreign key to School
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  school    School   @relation(fields: [schoolId], references: [id])
+  students  User[]                                   // Many students in this class
+  videos    Video[]                                  // Many videos for this class
+
+  @@index([schoolId])
+}
+
+// ============================================
+// VIDEO MODEL
+// ============================================
+model Video {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  url         String                                 // Video URL
+  subject     String                                 // e.g., "Mathematics", "English"
+  schoolId    Int
+  classId     Int
+  duration    Int?                                   // Duration in seconds (optional)
+  uploadedAt  DateTime @default(now())
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
+
+  @@index([schoolId])
+  @@index([classId])
+}
+
+// ============================================
+// SUBSCRIPTION MODEL
+// ============================================
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int                                      // Foreign key to User
+  plan      Plan     @default(MONTHLY)
+  status    Status   @default(ACTIVE)
+  startDate DateTime @default(now())
+  endDate   DateTime
+  amount    Int                                      // Amount in kobo (₦500 = 50000 kobo)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+enum Plan {
+  MONTHLY
+  TERMLY
+}
+
+enum Status {
+  ACTIVE
+  EXPIRED
+  TRIAL
+}
