@@ -7,100 +7,80 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// ============================================
-// SUPER_ADMIN 
-// ============================================
-model SuperAdmin {
-  id        Int         @id @default(autoincrement())
-  email     String      @unique
-  name      String 
-  isActive  Boolean     @default(true)
-  createdAt DateTime    @default(now())
-}
-
-// ============================================
-// SCHOOL MODEL
-// ============================================
 model School {
-  id        Int      @id @default(autoincrement())  // Auto-incrementing ID (1, 2, 3...)
-  name      String                                   // School name
-  subdomain      String   @unique                         // For subdomain (e.g., "greenfield")
-  logo      String?                                  // Logo URL (optional)
-  email     String                                   // Contact email
-  address   String?                                  // Address (optional)
-  isActive  Boolean  @default(true)                  // Is school active?
-  createdAt DateTime @default(now())                 // When created
-  updatedAt DateTime @updatedAt                      // Auto-updates on changes
+  id        Int      @id @default(autoincrement())  
+  name      String                                   
+  subdomain String   @unique                         
+  logo      String?                                  
+  email     String                                   
+  address   String?                                  
+  isActive  Boolean  @default(true)                  
+  createdAt DateTime @default(now())                 
+  updatedAt DateTime @updatedAt                      
 
-  users     User[]                                   // Many users
-  classes   Class[]                                  // Many classes
-  videos    Video[]                                  // Many videos
+  users     User[]                                   
+  classes   Class[]                                  
+  videos    Video[]                                  
 }
 
-// ============================================
-// USER MODEL (Students, Admins)
-// ============================================
+
 model User {
   id        Int      @id @default(autoincrement())
   name      String
-  email     String   @unique                         // No duplicate emails
-  password  String                                   // Hashed password
-  role      Role     @default(STUDENT)               // Default role is STUDENT
-  studentId String?                                  // e.g., "GFS/2024/001" (optional)
-  schoolId  Int                                      // Foreign key to School
-  classId   Int?                                     // Foreign key to Class (optional)
-  arm       String?                                  // e.g., "Lilac", "Butterfly" (optional)
+  email     String   @unique                         
+  password  String                                   
+  role      Role     @default(SUPER_ADMIN)              
+  studentId String?                                  
+  schoolId  Int                                      
+  classId   Int?                                    
+  arm       String?                               
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
-  school    School   @relation(fields: [schoolId], references: [id])  // Belongs to one school
-  class     Class?   @relation(fields: [classId], references: [id])   // Belongs to one class (optional)
+  school    School   @relation(fields: [schoolId], references: [id]) 
+  class     Class?   @relation(fields: [classId], references: [id]) 
 
-  // Indexes for faster queries
-  @@index([schoolId])  // Fast lookups by school
-  @@index([classId])   // Fast lookups by class
+  @@index([schoolId]) 
+  @@index([classId])
 }
 
-// Enum for user roles
+
 enum Role {
+  SUPER_ADMIN
   STUDENT
   ADMIN
 }
 
-// ============================================
-// CLASS MODEL
-// ============================================
+
 model Class {
   id        Int      @id @default(autoincrement())
-  grade     String                                   // e.g., "Grade 1", "Grade 2"
-  arms      String[]                                 // Array: ["Lilac", "Butterfly", "Rose"]
-  schoolId  Int                                      // Foreign key to School
+  grade     String                                 
+  arms      String[]                          
+  schoolId  Int                                     
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relationships
   school    School   @relation(fields: [schoolId], references: [id])
-  students  User[]                                   // Many students in this class
-  videos    Video[]                                  // Many videos for this class
+  students  User[]                             
+  videos    Video[]                        
 
   @@index([schoolId])
 }
 
-// ============================================
-// VIDEO MODEL
-// ============================================
+
 model Video {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  url         String                                 // Video URL
-  subject     String                                 // e.g., "Mathematics", "English"
+  url         String                                 
+  subject     String                                 
   schoolId    Int
   classId     Int
-  duration    Int?                                   // Duration in seconds (optional)
+  duration    Int?                                   
   uploadedAt  DateTime @default(now())
 
   school      School   @relation(fields: [schoolId], references: [id])
@@ -110,12 +90,9 @@ model Video {
   @@index([classId])
 }
 
-// ============================================
-// SUBSCRIPTION MODEL
-// ============================================
 model Subscription {
   id        Int      @id @default(autoincrement())
-  userId    Int                                      // Foreign key to User
+  userId    Int                                    
   plan      Plan     @default(MONTHLY)
   status    Status   @default(ACTIVE)
   startDate DateTime @default(now())
@@ -137,3 +114,8 @@ enum Status {
   EXPIRED
   TRIAL
 }
+
+
+
+
+
