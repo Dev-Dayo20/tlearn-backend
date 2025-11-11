@@ -5,86 +5,82 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model School {
-  id        Int      @id @default(autoincrement())  
-  name      String                                   
-  subdomain String   @unique                         
-  logo      String?                                  
-  email     String                                   
-  address   String?                                  
-  isActive  Boolean  @default(true)                  
-  createdAt DateTime @default(now())                 
-  updatedAt DateTime @updatedAt                      
+  id        Int      @id @default(autoincrement())
+  name      String
+  subdomain String   @unique
+  logo      String?
+  email     String
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  users     User[]                                   
-  classes   Class[]                                  
-  videos    Video[]                                  
+  users   User[]
+  classes Class[]
+  videos  Video[]
 }
-
 
 model User {
   id        Int      @id @default(autoincrement())
   name      String
-  email     String   @unique                         
-  password  String                                   
-  role      Role     @default(SUPER_ADMIN)              
-  studentId String?                                  
-  schoolId  Int                                      
-  classId   Int?                                    
-  arm       String?                               
+  email     String   @unique
+  password  String
+  role      Role     @default(SUPER_ADMIN)
+  studentId String?
+  schoolId  Int
+  classId   Int?
+  arm       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  school    School   @relation(fields: [schoolId], references: [id]) 
-  class     Class?   @relation(fields: [classId], references: [id]) 
+  school School @relation(fields: [schoolId], references: [id])
+  class  Class? @relation(fields: [classId], references: [id])
 
-  @@index([schoolId]) 
+  @@index([schoolId])
   @@index([classId])
 }
-
 
 enum Role {
   SUPER_ADMIN
   STUDENT
   ADMIN
+  TEACHER
 }
-
 
 model Class {
   id        Int      @id @default(autoincrement())
-  grade     String                                 
-  arms      String[]                          
-  schoolId  Int                                     
+  grade     String
+  arms      String[]
+  schoolId  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relationships
-  school    School   @relation(fields: [schoolId], references: [id])
-  students  User[]                             
-  videos    Video[]                        
+  school   School  @relation(fields: [schoolId], references: [id])
+  students User[]
+  videos   Video[]
 
   @@index([schoolId])
 }
-
 
 model Video {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  url         String                                 
-  subject     String                                 
+  url         String
+  subject     String
   schoolId    Int
   classId     Int
-  duration    Int?                                   
+  duration    Int?
   uploadedAt  DateTime @default(now())
 
-  school      School   @relation(fields: [schoolId], references: [id])
-  class       Class    @relation(fields: [classId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
+  class  Class  @relation(fields: [classId], references: [id])
 
   @@index([schoolId])
   @@index([classId])
@@ -92,12 +88,12 @@ model Video {
 
 model Subscription {
   id        Int      @id @default(autoincrement())
-  userId    Int                                    
+  userId    Int
   plan      Plan     @default(MONTHLY)
   status    Status   @default(ACTIVE)
   startDate DateTime @default(now())
   endDate   DateTime
-  amount    Int                                      // Amount in kobo (₦500 = 50000 kobo)
+  amount    Int // Amount in kobo (₦500 = 50000 kobo)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -114,8 +110,3 @@ enum Status {
   EXPIRED
   TRIAL
 }
-
-
-
-
-

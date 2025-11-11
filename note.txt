@@ -1,0 +1,14 @@
+## Tricky Migrations (Use --create-only)
+
+- [ ] Adding enum values
+- [ ] Making fields required (NOT NULL)
+- [ ] Removing fields with data
+- [ ] Changing field types
+- [ ] Complex relationships
+
+## Safe Migrations (Direct migrate dev)
+
+- [x] Adding optional fields
+- [x] Adding new models
+- [x] Adding indexes
+- [x] Adding relations
