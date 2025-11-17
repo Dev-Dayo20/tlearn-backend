@@ -5,8 +5,8 @@ import superAdminRoutes from "./super_Admin/super-admin-api";
 const router = Router();
 
 // Mounting the sub-routers
-router.use("/sch_admin", schAdminRoutes);
+router.use("/sch-admin", schAdminRoutes);
 router.use("/student", studentRoutes);
-router.use("/super_admin", superAdminRoutes);
+router.use("/super-admin", superAdminRoutes);
 
 export default router;

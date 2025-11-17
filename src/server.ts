@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
 dotenv.config();
 
 import mainRouter from "./routes/index";
@@ -8,17 +9,65 @@ import mainRouter from "./routes/index";
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles (for some UI libraries)
+        imgSrc: ["'self'", "data:", "https:"], // Allow images from https and data URIs
+        connectSrc: ["'self'"], // Allow API calls to same origin
+        fontSrc: ["'self'", "data:"], // Allow fonts
+        objectSrc: ["'none'"], // Block plugins
+        mediaSrc: ["'self'"], // Allow media from same origin
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? ["https://tlearn.com", "https://www.tlearn.com"]
+        : ["http://localhost:8080", "http://localhost:5173"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/tlearn", mainRouter);
 
-//Example route
+// Root route
 app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "tLearn Backend is running!", version: "1.0.0" });
+  res.json({
+    message: "tLearn Backend is running!",
+    version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
+  });
 });
 
-// listen to the server
+// 404 handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+// Global error handler
+app.use((err: any, req: Request, res: Response, next: any) => {
+  console.error("Error:", err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal server error",
+  });
+});
+
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`🔒 Security headers enabled`);
 });

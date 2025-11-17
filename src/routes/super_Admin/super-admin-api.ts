@@ -7,17 +7,24 @@ import {
   toggleSchoolStatus,
 } from "../../controllers/super_admin/createSchool";
 import { authenticate, requiredSuperAdmin } from "../../middlewares/auth";
+import {
+  validateLogin,
+  validateCreateSchool,
+  validate,
+} from "../../middlewares/validations";
 
 const router = Router();
 
 // ========== SUPER ADMIN LOGIN ==========
-router.post("/login", loginLimiter, loginSuperAdmin);
+router.post("/login", validate, validateLogin, loginLimiter, loginSuperAdmin);
 
 // ========== SUPER ADMIN SCHOOLS ==========
 router.post(
   "/create-school",
   authenticate,
   requiredSuperAdmin,
+  validateCreateSchool,
+  validate,
   createSchoolWithAdmin
 );
 
