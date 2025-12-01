@@ -18,17 +18,23 @@ export const authenticate = (
 ) => {
   try {
     const authHeader = req.headers.authorization;
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ error: "No token provided" });
+      res.status(401).json({ message: "No token provided" });
       return;
     }
+
     const token = authHeader.substring(7);
     const decoded = decodeToken(token);
+
     if (!decoded) {
-      res.status(401).json({ error: "Invalid token" });
+      res.status(401).json({ message: "Invalid token" });
       return;
     }
+
+    if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+      return res.status(401).json({ message: "Token has expired" });
+    }
+
     req.user = decoded;
     next();
   } catch (error) {

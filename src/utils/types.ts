@@ -4,6 +4,8 @@ export interface AUthPayload {
   role: string;
   schoolId?: number;
   subdomain?: string;
+  exp?: number;
+  iat?: number;
 }
 
 export interface createSchoolPayload {
@@ -22,3 +24,4 @@ export interface createSchoolPayload {
 export interface schoolIdParam {
   id: number;
 }
+

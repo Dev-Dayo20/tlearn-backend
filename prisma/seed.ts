@@ -12,18 +12,6 @@ const superAdminName = process.env.SUPER_ADMIN_NAME || "Tlearn Super Admin";
 export async function main() {
   console.log("Starting database seeding...");
 
-  //Create Sample School
-  const sampleSchool = await prisma.school.upsert({
-    where: { subdomain: "Tlearn-sample" },
-    update: {},
-    create: {
-      name: "Tlearn Sample School",
-      subdomain: "Tlearn-sample",
-      email: "sampleschool@gmail.com",
-    },
-  });
-
-  const sampleSchId = sampleSchool.id;
   const salt: number = 10;
   const hashedPassword = await bcrypt.hash(superAdminPassword, salt);
 
@@ -35,7 +23,7 @@ export async function main() {
       email: superAdminEmail,
       password: hashedPassword,
       role: Role.SUPER_ADMIN,
-      schoolId: sampleSchId,
+      schoolId: null,
     },
   });
 

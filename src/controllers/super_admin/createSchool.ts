@@ -4,7 +4,8 @@ import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
 import { generateToken } from "../../utils/Utils";
 import { Role } from "@prisma/client";
-import { createSchoolPayload, schoolIdParam } from "../../utils/types";
+import { createSchoolPayload } from "../../utils/types";
+import { uploadToCloudinary } from "../../utils/uploadImage";
 
 export const createSchoolWithAdmin = async (req: Request, res: Response) => {
   try {
@@ -13,11 +14,17 @@ export const createSchoolWithAdmin = async (req: Request, res: Response) => {
       subdomain,
       schoolEmail,
       address,
-      logo,
       adminName,
       adminEmail,
       adminPassword,
     } = req.body as createSchoolPayload;
+
+    // Upload logo if provided
+    let logoUrl: string | null = null;
+    if (req.file) {
+      logoUrl = await uploadToCloudinary(req.file);
+    }
+
     if (
       !schoolName ||
       !subdomain ||
@@ -66,7 +73,7 @@ export const createSchoolWithAdmin = async (req: Request, res: Response) => {
             subdomain,
             email: schoolEmail,
             address,
-            logo,
+            logo: logoUrl, // Save Cloudinary URL
             isActive: true,
           },
         });
@@ -124,6 +131,17 @@ export const getAllSchools = async (req: Request, res: Response) => {
           _count: {
             select: { users: true, classes: true, videos: true },
           },
+          users: {
+            where: { role: Role.ADMIN },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              createdAt: true,
+            },
+            take: 1,
+          },
         },
         orderBy: { createdAt: "desc" },
       })
@@ -171,5 +189,77 @@ export const toggleSchoolStatus = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(`Error updating school status: ${error}`);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteSchool = async (req: Request, res: Response) => {
+  try {
+    const { schoolId } = req.params;
+
+    if (!schoolId) {
+      res.status(400).json({
+        success: false,
+        message: "School ID is required",
+      });
+      return;
+    }
+
+    const schoolIdParse = parseInt(schoolId);
+    if (isNaN(schoolIdParse)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid school ID format",
+      });
+      return;
+    }
+
+    // Check if school exists
+    const school = await queryWithRetry(() =>
+      prisma.school.findUnique({
+        where: { id: schoolIdParse },
+        include: {
+          _count: {
+            select: { users: true, classes: true, videos: true },
+          },
+        },
+      })
+    );
+
+    if (!school) {
+      res.status(404).json({
+        success: false,
+        message: "School not found",
+      });
+      return;
+    }
+
+    // Optional: Prevent deletion if school has data
+    // if (school._count.users > 0 || school._count.classes > 0) {
+    //   res.status(400).json({
+    //     success: false,
+    //     message:
+    //       "Cannot delete school with existing users or classes. Deactivate instead.",
+    //   });
+    //   return;
+    // }
+
+    // Delete school (cascades to users, classes, videos based on Prisma schema)
+    await queryWithRetry(() =>
+      prisma.school.delete({
+        where: { id: schoolIdParse },
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "School deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting school:", error);
+    // handleError(error, res);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };

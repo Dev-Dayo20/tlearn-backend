@@ -66,3 +66,21 @@ export function decodeToken(token: string): AUthPayload | null {
     return null;
   }
 }
+
+// Helper function to calculate time ago
+export function getTimeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+  if (seconds < 60) return `${seconds} sec ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400)
+    return `${Math.floor(seconds / 3600)} hour${
+      Math.floor(seconds / 3600) > 1 ? "s" : ""
+    } ago`;
+  if (seconds < 2592000)
+    return `${Math.floor(seconds / 86400)} day${
+      Math.floor(seconds / 86400) > 1 ? "s" : ""
+    } ago`;
+
+  return date.toLocaleDateString();
+}

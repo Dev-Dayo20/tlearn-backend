@@ -7,11 +7,11 @@ export const validate = (req: Request, res: Response, next: NextFunction) => {
 
   if (!errors.isEmpty()) {
     return res.status(400).json({
-      error: "Validation failed",
+      success: false,
+      message: "Validation failed",
       details: errors.array(),
     });
   }
-
   next();
 };
 
@@ -30,7 +30,7 @@ export const validateCreateSchool = [
     .trim()
     .notEmpty()
     .withMessage("Subdomain is required")
-    .isLength({ min: 3, max: 30 })
+    .isLength({ min: 3, max: 50 })
     .withMessage("Subdomain must be 3-30 characters")
     .matches(/^[a-z0-9-]+$/)
     .withMessage(
@@ -64,24 +64,27 @@ export const validateCreateSchool = [
     .isEmail()
     .withMessage("Invalid email format")
     .normalizeEmail(),
-
   // Admin password
   body("adminPassword")
     .notEmpty()
     .withMessage("Password is required")
     .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters"),
+    .withMessage("Password must be at least 8 characters")
+    .matches(/[A-Z]/)
+    .withMessage("Password must contain at least one uppercase letter")
+    .matches(/[a-z]/)
+    .withMessage("Password must contain at least one lowercase letter")
+    .matches(/[0-9]/)
+    .withMessage("Password must contain at least one number"),
 
-  // Address (optional)
+  // Address
   body("address")
-    .optional()
     .trim()
-    .isLength({ max: 200 })
-    .withMessage("Address too long")
+    .notEmpty()
+    .withMessage("Address is required") // ← Made required (matches frontend)
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Address must be 5-200 characters")
     .escape(),
-
-  // Logo URL (optional)
-  body("logo").optional().trim().isURL().withMessage("Invalid logo URL"),
 ];
 
 /**
