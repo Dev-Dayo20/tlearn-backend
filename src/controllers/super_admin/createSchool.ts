@@ -125,8 +125,40 @@ export const createSchoolWithAdmin = async (req: Request, res: Response) => {
 
 export const getAllSchools = async (req: Request, res: Response) => {
   try {
+    const { search, status, page = "1", limit = "10" } = req.query;
+
+    // Parse pagination params
+    const pageNumber = parseInt(page as string, 10);
+    const pageSize = parseInt(limit as string, 10);
+    const skip = (pageNumber - 1) * pageSize;
+
+    const whereConditions: any = {};
+
+    if (search && typeof search === "string") {
+      whereConditions.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { subdomain: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    // Filter by status
+    if (status && status !== "all") {
+      if (status === "active") {
+        whereConditions.isActive = true;
+      } else if (status === "inactive") {
+        whereConditions.isActive = false;
+      }
+    }
+
+    // Get total count for pagination
+    const totalSchools = await queryWithRetry(() =>
+      prisma.school.count({ where: whereConditions })
+    );
+
     const schools = await queryWithRetry(() =>
       prisma.school.findMany({
+        where: whereConditions,
         include: {
           _count: {
             select: { users: true, classes: true, videos: true },
@@ -144,9 +176,26 @@ export const getAllSchools = async (req: Request, res: Response) => {
           },
         },
         orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
       })
     );
-    res.status(200).json({ success: true, count: schools.length, schools });
+
+    const totalPages = Math.ceil(totalSchools / pageSize);
+
+    res.status(200).json({
+      success: true,
+      count: schools.length,
+      schools,
+      pagination: {
+        currentPage: pageNumber,
+        pageSize: pageSize,
+        totalSchools: totalSchools,
+        totalPages: totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching schools:", error);
     res.status(500).json({ message: "Internal server error." });
