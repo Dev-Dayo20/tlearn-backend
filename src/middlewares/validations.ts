@@ -1,4 +1,4 @@
-import { body, validationResult } from "express-validator";
+import { body, validationResult, query } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import validator from "validator";
 
@@ -101,6 +101,57 @@ export const validateLogin = [
 
   body("password").notEmpty().withMessage("Password is required"),
 ];
+
+export const userPagination = [
+  query("search")
+    .optional()
+    .isString()
+    .withMessage("Search must be a string")
+    .trim()
+    .escape()
+    .isLength({ max: 100 })
+    .withMessage("Search query too long"),
+
+  query("role")
+    .optional()
+    .isIn(["ADMIN", "STUDENT"])
+    .withMessage("Invalid role")
+    .toUpperCase()
+    .trim()
+    .escape()
+    .isLength({ max: 20 })
+    .withMessage("Role query too long"),
+
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be at least 1")
+    .toInt()
+    .default(1)
+    .trim()
+    .escape(),
+
+  query("pageSize")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Page size must be between 1 and 100")
+    .toInt(),
+];
+
+const allowedQueryFields = ["search", "role", "page", "pageSize"];
+
+export const stripUnknownQueries = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  Object.keys(req.query).forEach((key) => {
+    if (!allowedQueryFields.includes(key)) {
+      delete req.query[key];
+    }
+  });
+  next();
+};
 
 export function sanitizeInput(input: string): string {
   // Remove null bytes

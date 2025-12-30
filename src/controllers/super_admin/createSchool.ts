@@ -130,7 +130,7 @@ export const getAllSchools = async (req: Request, res: Response) => {
     // Parse pagination params
     const pageNumber = parseInt(page as string, 10);
     const pageSize = parseInt(limit as string, 10);
-    const skip = (pageNumber - 1) * pageSize;
+    const skip = (pageNumber - 1) * pageSize; 
 
     const whereConditions: any = {};
 

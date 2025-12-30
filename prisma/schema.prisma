@@ -24,6 +24,8 @@ model School {
   users   User[]
   classes Class[]
   videos  Video[]
+
+  @@index([isActive])
 }
 
 model User {
@@ -36,6 +38,7 @@ model User {
   schoolId  Int?
   classId   Int?
   arm       String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -44,6 +47,7 @@ model User {
 
   @@index([schoolId])
   @@index([classId])
+  @@index([role])
 }
 
 enum Role {

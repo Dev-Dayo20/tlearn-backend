@@ -67,7 +67,8 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`🔒 Security headers enabled`);
+  console.log(`Server running on http://localhost:`);
+  // console.log(`🚀 Server running on http://localhost:${PORT}`);
+  // console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+  // console.log(`🔒 Security headers enabled`);
 });
