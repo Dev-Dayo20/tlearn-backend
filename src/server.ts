@@ -58,6 +58,10 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({ error: "Route not found" });
 });
 
+app.get("/healthz", (_, res) => {
+  res.status(200).send("ok");
+});
+
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: any) => {
   console.error("Error:", err);
@@ -67,8 +71,8 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:`);
+  console.log(`Server running `);
   // console.log(`🚀 Server running on http://localhost:${PORT}`);
-  // console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
   // console.log(`🔒 Security headers enabled`);
 });
