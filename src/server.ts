@@ -32,7 +32,11 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
-        ? ["https://tlearn.com", "https://www.tlearn.com"]
+        ? [
+            "https://tlearn.com",
+            "https://www.tlearn.com",
+            "https://tlearn-ten.vercel.app",
+          ]
         : ["http://localhost:8080", "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
