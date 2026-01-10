@@ -17,7 +17,11 @@ export const SchoolUsersLogin = async (
   const school = req.school;
 
   if (!role) {
-    throw new AppError("Role is require", 401);
+    throw new AppError("Missing required fields", 401);
+  }
+
+  if (!school) {
+    throw new AppError("Unauthorized access", 401);
   }
 
   if (!["ADMIN", "STUDENT", "TEACHER"].includes(role)) {
@@ -44,6 +48,10 @@ export const SchoolUsersLogin = async (
   const data = validatedData.data;
   let user;
 
+  if (data.schoolId !== school.id) {
+    throw new AppError("Invalid school access", 401);
+  }
+
   if (data.role === "STUDENT") {
     user = await queryWithRetry(() =>
       prisma.user.findFirst({
@@ -67,8 +75,8 @@ export const SchoolUsersLogin = async (
       })
     );
 
-    if (!user || user.id !== req.school?.id) {
-      throw new AppError("Unauthorized access", 401);
+    if (!user) {
+      throw new AppError("User not found", 404);
     }
   } else {
     user = await queryWithRetry(() =>
@@ -82,8 +90,8 @@ export const SchoolUsersLogin = async (
       })
     );
 
-    if (!user || user.schoolId !== req.school?.id) {
-      throw new AppError("Unauthorized access", 401);
+    if (!user) {
+      throw new AppError("User not found", 404);
     }
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);
