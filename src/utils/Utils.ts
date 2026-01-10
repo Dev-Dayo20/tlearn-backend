@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import { AUthPayload } from "./types";
+import { AUthPayload, SchoolUsersPayload } from "./types";
+import { AppError } from "./AppError";
 
 export function isEmailValid(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -7,14 +8,6 @@ export function isEmailValid(email: string): boolean {
     return false;
   }
   return emailRegex.test(email);
-}
-
-function getSecretKey(): string {
-  const secret = process.env.SECRET_KEY;
-  if (!secret) {
-    throw new Error("SECRET_KEY is not defined in environment variables");
-  }
-  return secret;
 }
 
 export async function queryWithRetry<T>(
@@ -45,20 +38,39 @@ export async function queryWithRetry<T>(
   throw lastError;
 }
 
+//FUNCTION TO GNERATE SECRET KEY
+function getSecretKey(): string {
+  const secret = process.env.SECRET_KEY;
+  if (!secret) {
+    throw new Error("SECRET_KEY is not defined in environment variables");
+  }
+  return secret;
+}
+
+// FUNCTION TO GENERATE SCHOOL USER TOKEN
+export function generateSchoolUserToken(payload: SchoolUsersPayload): string {
+  return jwt.sign(payload, getSecretKey(), {
+    expiresIn: "30m",
+  });
+}
+
+// FUNCTION TO GENERATE TOKEN
 export function generateToken(payload: AUthPayload): string {
   return jwt.sign(payload, getSecretKey(), {
     expiresIn: "30m",
   });
 }
 
+// HELPER FUNCTION TO VERIFY TOKEN
 export function verifyToken(token: string): AUthPayload {
   try {
     return jwt.verify(token, getSecretKey()) as AUthPayload;
   } catch (error) {
-    throw new Error("Invalid or expired token");
+    throw new AppError("Invalid or expired token", 401);
   }
 }
 
+// FUNCTION TO DECODE TOKEN
 export function decodeToken(token: string): AUthPayload | null {
   try {
     return jwt.decode(token) as AUthPayload;
@@ -67,7 +79,7 @@ export function decodeToken(token: string): AUthPayload | null {
   }
 }
 
-// Helper function to calculate time ago
+// HEPLPER FUNCTION TO CLACULATE TIME AGO
 export function getTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 

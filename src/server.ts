@@ -5,6 +5,7 @@ import helmet from "helmet";
 dotenv.config();
 
 import mainRouter from "./routes/index";
+import { errorHandler } from "./middlewares/errorHandler";
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -37,10 +38,15 @@ app.use(
             "https://www.tlearn.com",
             "https://tlearn-ten.vercel.app",
           ]
-        : ["http://localhost:8080", "http://localhost:5173"],
+        : [
+            "http://localhost:8080",
+            "http://localhost:5173",
+            /^http:\/\/[a-z]+\.localhost:8080$/, // ✅ Only lowercase letters
+            /^http:\/\/[a-z]+\.localhost:5173$/, // ✅ Only lowercase letters
+          ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-School-Subdomain"],
   })
 );
 app.use(express.json());
@@ -80,3 +86,5 @@ app.listen(PORT, () => {
   console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
   // console.log(`🔒 Security headers enabled`);
 });
+
+app.use(errorHandler);

@@ -37,17 +37,18 @@ model User {
   studentId String?
   schoolId  Int?
   classId   Int?
-  arm       String?
+  armId     Int?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   school School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   class  Class?  @relation(fields: [classId], references: [id], onDelete: SetNull)
+  arm    Arm?    @relation(fields: [armId], references: [id])
 
   @@index([schoolId])
   @@index([classId])
-  @@index([role])
+  @@index([armId])
 }
 
 enum Role {
@@ -58,18 +59,33 @@ enum Role {
 }
 
 model Class {
-  id        Int      @id @default(autoincrement())
-  grade     String
-  arms      String[]
-  schoolId  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id       Int    @id @default(autoincrement())
+  name     String
+  schoolId Int
 
   school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   students User[]
   videos   Video[]
+  arms     Arm[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([schoolId])
+}
+
+model Arm {
+  id      Int    @id @default(autoincrement())
+  name    String
+  classId Int
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  // Students in this specific arm
+  students  User[]
+  materials Video[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Video {
@@ -82,9 +98,11 @@ model Video {
   classId     Int
   duration    Int?
   uploadedAt  DateTime @default(now())
+  armId       Int?
 
   school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   class  Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  arm    Arm?   @relation(fields: [armId], references: [id])
 
   @@index([schoolId])
   @@index([classId])

@@ -8,6 +8,13 @@ export interface AUthPayload {
   iat?: number;
 }
 
+export interface SchoolUsersPayload {
+  id: number;
+  role: string;
+  exp?: number;
+  iat?: number;
+}
+
 export interface createSchoolPayload {
   // School details
   schoolName: string;
@@ -24,4 +31,3 @@ export interface createSchoolPayload {
 export interface schoolIdParam {
   id: number;
 }
-

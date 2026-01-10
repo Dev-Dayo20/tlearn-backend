@@ -7,7 +7,8 @@ import {
   toggleSchoolStatus,
   deleteSchool,
 } from "../../controllers/super_admin/createSchool";
-import { authenticate, requiredSuperAdmin } from "../../middlewares/auth";
+import { authenticate } from "../../middlewares/auth";
+import { requiredSuperAdmin } from "../../middlewares/requiredAccess";
 import {
   getDashboardMetrics,
   getChartData,
