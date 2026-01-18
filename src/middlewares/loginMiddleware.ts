@@ -20,7 +20,7 @@ declare global {
 export const authSchoolUsersLogin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   let subdomain = req.headers["x-school-subdomain"] as string | undefined;
 
@@ -57,7 +57,7 @@ export const authSchoolUsersLogin = async (
         subdomain: subdomain.toLowerCase(),
         isActive: true,
       },
-    })
+    }),
   );
 
   if (!schoolExists) {
@@ -65,5 +65,6 @@ export const authSchoolUsersLogin = async (
   }
 
   req.school = schoolExists;
+  // console.log(req.school);
   next();
 };

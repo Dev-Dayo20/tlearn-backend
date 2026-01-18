@@ -49,7 +49,7 @@ function extractSubdomain(hostname: string): string | null {
 export const detectSubdomain = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const hostname = req.hostname || req.headers.host || "";
   const subdomain = extractSubdomain(hostname);
@@ -74,7 +74,7 @@ export const detectSubdomain = async (
         email: true,
         isActive: true,
       },
-    })
+    }),
   );
 
   // Check if school exists
@@ -93,8 +93,10 @@ export const detectSubdomain = async (
 export const requireSchAdmin = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
+  const allowedRoles = [Role.ADMIN, Role.SUPER_ADMIN];
+
   if (!req.school) {
     throw new AppError("School context required", 400);
   }
@@ -108,16 +110,22 @@ export const requireSchAdmin = (
   }
 
   // Check if user's school matches the subdomain school
-  if (req.user.schoolId !== req.school.id) {
+  if (req.user.id !== req.school.id) {
     throw new AppError("Access denied. You don't belong to this school.", 403);
   }
+
+  // const user = req.user;
+  // const school = req.school;
+
+  // console.log(user);
+  // console.log(school);
   next();
 };
 
 export const requiredSuperAdmin = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (!req.user) {
     throw new AppError("Authentication required", 401);

@@ -15,7 +15,7 @@ declare global {
 export const authenticate = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -36,5 +36,6 @@ export const authenticate = (
   const tokenVerify = verifyToken(token);
 
   req.user = decoded;
+  // console.log(req.user);
   next();
 };

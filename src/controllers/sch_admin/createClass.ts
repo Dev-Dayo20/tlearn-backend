@@ -11,7 +11,7 @@ export const createClass = async (req: Request, res: Response) => {
     throw new AppError("Invalid input", 400);
   }
 
-  const { name, teacher, arms } = validatedData.data;
+  const { name, teacher, arms, subjects } = validatedData.data;
 
   const school = req.school;
   if (!school) {
@@ -21,10 +21,13 @@ export const createClass = async (req: Request, res: Response) => {
   const existingClass = await queryWithRetry(() =>
     prisma.class.findFirst({
       where: {
-        name: name,
+        name: {
+          equals: name.trim(),
+          mode: "insensitive",
+        },
         schoolId: school.id,
       },
-    })
+    }),
   );
 
   if (existingClass) {
@@ -34,14 +37,25 @@ export const createClass = async (req: Request, res: Response) => {
   const newClass = await queryWithRetry(() =>
     prisma.class.create({
       data: {
-        name: name,
+        name: name.trim(),
         schoolId: school.id,
         arms: arms?.length
-          ? { create: arms.map((armName) => ({ name: armName })) }
+          ? {
+              create: arms
+                .filter((armName) => armName.trim())
+                .map((armName) => ({ name: armName.trim() })),
+            }
+          : undefined,
+        subjects: subjects?.length
+          ? {
+              create: subjects
+                .filter((subjectName) => subjectName.trim())
+                .map((subjectName) => ({ name: subjectName.trim() })),
+            }
           : undefined,
       },
-      include: { arms: true },
-    })
+      include: { arms: true, subjects: true },
+    }),
   );
 
   res

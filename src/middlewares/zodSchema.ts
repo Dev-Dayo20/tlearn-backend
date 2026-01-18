@@ -35,4 +35,27 @@ export const createClassSchema = z.object({
   name: z.string().min(1, "Class name is required"),
   teacher: z.string().optional(),
   arms: z.array(z.string().min(1)).optional(),
+  subjects: z.array(z.string().min(1)).optional(),
+});
+
+export const getClassesSchema = z.object({
+  search: z.string().max(100).trim().optional(),
+  page: z
+    .string()
+    .regex(/^\d+$/, "Page must be a positive integer")
+    .transform(Number)
+    .refine((n) => n > 0, "Page must be greater than 0")
+    .default(1),
+  pageSize: z
+    .string()
+    .regex(/^\d+$/, "Page size must be a positive integer")
+    .transform(Number)
+    .refine((n) => n > 0 && n <= 100, "Page size must be between 1 and 100")
+    .default(10),
+  isActive: z.enum(["true", "false"]).optional(),
+  sortBy: z
+    .enum(["name", "createdAt", "updatedAt"])
+    .optional()
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });

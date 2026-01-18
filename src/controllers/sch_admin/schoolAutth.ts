@@ -32,6 +32,7 @@ export const SchoolUsersLogin = async (
 
   const schema = SchoolLoginSchema[role as Role];
   const validatedData = schema.safeParse(req.body);
+  // console.log(validatedData);
 
   if (!validatedData.success) {
     // if (process.env.NODE_ENV === "development") {
@@ -104,7 +105,7 @@ export const SchoolUsersLogin = async (
   }
 
   const payload: SchoolUsersPayload = {
-    id: user.id,
+    id: user.schoolId,
     role: user.role,
   };
 

@@ -9,7 +9,7 @@ export interface AUthPayload {
 }
 
 export interface SchoolUsersPayload {
-  id: number;
+  id: number | null;
   role: string;
   exp?: number;
   iat?: number;
