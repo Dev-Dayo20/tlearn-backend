@@ -4,11 +4,19 @@ import { SchoolUsersLogin } from "../../controllers/sch_admin/schoolAutth";
 import { createClass } from "../../controllers/sch_admin/createClass";
 import { getClasses } from "../../controllers/sch_admin/getClasses";
 import { getClassDetails } from "../../controllers/sch_admin/getClasses";
+import { createTeacher } from "../../controllers/sch_admin/teacher";
+import { getTeachers } from "../../controllers/sch_admin/teacher";
+import {
+  createStudents,
+  getStudents,
+} from "../../controllers/sch_admin/students";
+import { classes } from "../../controllers/sch_admin/createClass";
 
 // ========== MIDDLEWARES ==========
 import { authenticate } from "../../middlewares/auth";
 import { authSchoolUsersLogin } from "../../middlewares/loginMiddleware";
 import { requireSchAdmin } from "../../middlewares/requiredAccess";
+import { upload } from "../../middlewares/upload";
 
 const router = Router();
 
@@ -22,6 +30,14 @@ router.post("/login", authSchoolUsersLogin, SchoolUsersLogin);
 router.post("/class", authenticate, authSchoolUsersLogin, createClass);
 
 //======== SCHOOLADMIN FETCH CLASSES ===========
+router.get(
+  "/classes/list",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  classes,
+);
+
 router.get(
   "/classes",
   authenticate,
@@ -37,4 +53,38 @@ router.get(
   getClassDetails,
 );
 
+//========= SCHOOL ADMIN TEACHER ==========
+router.post(
+  "/teacher",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  createTeacher,
+);
+
+router.get(
+  "/teachers",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  getTeachers,
+);
+
+// ========== SCHOOL ADMIN STUDENTS ==========
+router.post(
+  "/register/students",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  upload.single("profilePicture"),
+  createStudents,
+);
+
+router.get(
+  "/students",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  getStudents,
+);
 export default router;

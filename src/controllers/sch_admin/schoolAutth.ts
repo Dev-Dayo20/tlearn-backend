@@ -11,7 +11,7 @@ import { AppError } from "../../utils/AppError";
 
 export const SchoolUsersLogin = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { role } = req.body;
   const school = req.school;
@@ -35,14 +35,6 @@ export const SchoolUsersLogin = async (
   // console.log(validatedData);
 
   if (!validatedData.success) {
-    // if (process.env.NODE_ENV === "development") {
-    //   res.status(400).json({
-    //     success: false,
-    //     message: "Validation failed",
-    //     erorrs: validatedData.error.flatten().fieldErrors,
-    //   });
-    //   return;
-    // }
     throw new AppError("Validation failed", 400);
   }
 
@@ -73,7 +65,7 @@ export const SchoolUsersLogin = async (
           arm: true,
           isActive: true,
         },
-      })
+      }),
     );
 
     if (!user) {
@@ -88,11 +80,15 @@ export const SchoolUsersLogin = async (
           schoolId: school?.id,
           isActive: true,
         },
-      })
+      }),
     );
 
     if (!user) {
       throw new AppError("User not found", 404);
+    }
+
+    if (!user.password) {
+      throw new AppError("Password not set for this user.", 401);
     }
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);

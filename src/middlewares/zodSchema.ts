@@ -1,4 +1,5 @@
-import { z } from "zod";
+import { email, z } from "zod";
+import { da } from "zod/v4/locales";
 
 export const SchoolLoginSchema = {
   ADMIN: z
@@ -33,7 +34,7 @@ export const SchoolLoginSchema = {
 
 export const createClassSchema = z.object({
   name: z.string().min(1, "Class name is required"),
-  teacher: z.string().optional(),
+  teacher: z.number().optional(),
   arms: z.array(z.string().min(1)).optional(),
   subjects: z.array(z.string().min(1)).optional(),
 });
@@ -58,4 +59,24 @@ export const getClassesSchema = z.object({
     .optional()
     .default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+});
+
+export const createTeacherSchema = z.object({
+  name: z.string().min(1, "Teacher's name is required"),
+  email: z
+    .email({ message: "Invalid Email" })
+    .refine((val) => /\.(com|net|org|io|gov|edu)$/i.test(val), {
+      message: "Email must end with a valid TLD eg .com, .net...",
+    })
+    .transform((val) => val.toLowerCase()),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const createStudentSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.email().optional().or(z.literal("")), // Optional email
+  classId: z.number().int().positive(),
+  armId: z.number().int().positive().optional(),
+  dateOfBirth: z.string().optional().or(z.literal("")), // Optional date of birth
+  profilePicture: z.string().url().nullable().optional().or(z.literal("")),
 });

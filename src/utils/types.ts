@@ -1,6 +1,6 @@
 export interface AUthPayload {
   id: number;
-  email: string;
+  email?: string;
   role: string;
   schoolId?: number;
   subdomain?: string;

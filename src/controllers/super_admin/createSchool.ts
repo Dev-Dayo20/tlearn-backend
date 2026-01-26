@@ -42,14 +42,14 @@ export const createSchoolWithAdmin = async (req: Request, res: Response) => {
   }
 
   const existingSchool = await queryWithRetry(() =>
-    prisma.school.findUnique({ where: { subdomain } })
+    prisma.school.findUnique({ where: { subdomain } }),
   );
   if (existingSchool) {
     throw new AppError("Domain name already in use.", 400);
   }
 
   const existingAdmin = await queryWithRetry(() =>
-    prisma.user.findUnique({ where: { email: adminEmail } })
+    prisma.user.findUnique({ where: { email: adminEmail } }),
   );
   if (existingAdmin) {
     throw new AppError("Admin already exists", 400);
@@ -81,12 +81,12 @@ export const createSchoolWithAdmin = async (req: Request, res: Response) => {
         },
       });
       return { school, schoolAdmin };
-    })
+    }),
   );
 
   const token = generateToken({
     id: result.schoolAdmin.id,
-    email: result.schoolAdmin.email,
+    email: result.schoolAdmin.email ?? undefined,
     role: result.schoolAdmin.role,
     schoolId: result.school.id,
     subdomain: result.school.subdomain,
@@ -141,7 +141,7 @@ export const getAllSchools = async (req: Request, res: Response) => {
 
   // Get total count for pagination
   const totalSchools = await queryWithRetry(() =>
-    prisma.school.count({ where: whereConditions })
+    prisma.school.count({ where: whereConditions }),
   );
 
   const schools = await queryWithRetry(() =>
@@ -166,7 +166,7 @@ export const getAllSchools = async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
-    })
+    }),
   );
 
   const totalPages = Math.ceil(totalSchools / pageSize);
@@ -206,7 +206,7 @@ export const toggleSchoolStatus = async (req: Request, res: Response) => {
     prisma.school.update({
       where: { id: schoolIdParse },
       data: { isActive },
-    })
+    }),
   );
   res.status(200).json({
     success: true,
@@ -236,7 +236,7 @@ export const deleteSchool = async (req: Request, res: Response) => {
           select: { users: true, classes: true, videos: true },
         },
       },
-    })
+    }),
   );
 
   if (!school) {
@@ -247,7 +247,7 @@ export const deleteSchool = async (req: Request, res: Response) => {
   if (school._count.users > 0 || school._count.classes > 0) {
     throw new AppError(
       "Cannot delete school with existing users or classes. Deactivate instead.",
-      400
+      400,
     );
   }
 
@@ -255,7 +255,7 @@ export const deleteSchool = async (req: Request, res: Response) => {
   await queryWithRetry(() =>
     prisma.school.delete({
       where: { id: schoolIdParse },
-    })
+    }),
   );
 
   res.status(200).json({

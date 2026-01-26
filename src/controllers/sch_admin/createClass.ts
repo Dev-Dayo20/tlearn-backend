@@ -37,28 +37,62 @@ export const createClass = async (req: Request, res: Response) => {
   const newClass = await queryWithRetry(() =>
     prisma.class.create({
       data: {
-        name: name.trim(),
+        name: name.trim().toLowerCase(),
         schoolId: school.id,
+        teacherId: teacher || null,
         arms: arms?.length
           ? {
               create: arms
                 .filter((armName) => armName.trim())
-                .map((armName) => ({ name: armName.trim() })),
+                .map((armName) => ({
+                  name: armName.trim().toLowerCase(),
+                  schoolId: school.id,
+                })),
             }
           : undefined,
         subjects: subjects?.length
           ? {
               create: subjects
                 .filter((subjectName) => subjectName.trim())
-                .map((subjectName) => ({ name: subjectName.trim() })),
+                .map((subjectName) => ({
+                  name: subjectName.trim().toLowerCase(),
+                })),
             }
           : undefined,
       },
-      include: { arms: true, subjects: true },
+      include: {
+        arms: true,
+        subjects: true,
+        teacher: { select: { id: true, name: true } },
+      },
     }),
   );
 
   res
     .status(201)
     .json({ success: true, message: "Class created successfully", newClass });
+};
+
+export const classes = async (req: Request, res: Response) => {
+  const school = req.school;
+  if (!school) {
+    throw new AppError("School not found", 404);
+  }
+
+  const classes = await queryWithRetry(() =>
+    prisma.class.findMany({
+      where: { schoolId: school.id },
+      include: {
+        arms: true,
+        subjects: true,
+        teacher: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  );
+  res.status(200).json({
+    success: true,
+    message: "Classes retrieved successfully",
+    classes,
+  });
 };

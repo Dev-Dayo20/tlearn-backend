@@ -27,14 +27,22 @@ const superAdminLogin = async (req: Request, res: Response): Promise<void> => {
     throw new AppError("Unauthorized access.", 401);
   }
 
-  const passwordMatch = await bcrypt.compare(password, admin.password);
+  if (!admin.password) {
+    throw new AppError("Password not set for this user.", 401);
+  }
+
+  const passwordMatch = await bcrypt.compare(
+    password,
+    admin.password as string,
+  );
+
   if (!passwordMatch) {
     throw new AppError("Invalid credentials.", 401);
   }
 
   const payload: AUthPayload = {
     id: admin.id,
-    email: admin.email,
+    email: admin.email ?? undefined,
     role: admin.role,
   };
 

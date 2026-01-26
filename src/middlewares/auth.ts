@@ -19,7 +19,7 @@ export const authenticate = (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw (new AppError("No token provided"), 401);
+    throw new AppError("No token provided", 401);
   }
 
   const token = authHeader.substring(7);
@@ -30,7 +30,7 @@ export const authenticate = (
   }
 
   if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-    throw new AppError("Token has expired", 401);
+    throw new AppError("Token has expired. Please login again", 401);
   }
 
   const tokenVerify = verifyToken(token);

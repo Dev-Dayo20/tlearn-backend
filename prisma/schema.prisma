@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,104 +9,94 @@ datasource db {
 }
 
 model School {
-  id        Int     @id @default(autoincrement()) //@id @default(uuid()) npx prisma migrate dev --name use_uuid_for_class_id
-  name      String
-  subdomain String  @unique
-  logo      String?
-  email     String
-  address   String?
-  isActive  Boolean @default(true)
-
-  users   User[]
-  classes Class[]
-  videos  Video[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  name           String
+  subdomain      String   @unique
+  studentCounter Int      @default(0)
+  logo           String?
+  email          String
+  address        String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  classes        Class[]
+  users          User[]
+  videos         Video[]
+  arms           Arm[]
 
   @@index([isActive])
 }
 
 model User {
-  id        Int     @id @default(autoincrement())
-  name      String
-  email     String  @unique
-  password  String
-  role      Role    @default(SUPER_ADMIN)
-  studentId String?
-  schoolId  Int?
-  classId   Int?
-  armId     Int?
-  isActive  Boolean @default(true)
-
-  school           School?   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  class            Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
-  arm              Arm?      @relation(fields: [armId], references: [id])
+  id               Int       @id @default(autoincrement())
+  name             String
+  email            String?   @unique
+  password         String?
+  profilePicture   String?
+  dateOfBirth      DateTime?
+  role             Role      @default(SUPER_ADMIN)
+  studentId        String?   @unique
+  schoolId         Int?
+  classId          Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isActive         Boolean   @default(true)
+  armId            Int?
+  classes          Class[]   @relation("ClassTeacher")
   teachingSubjects Subject[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  arm              Arm?      @relation(fields: [armId], references: [id])
+  class            Class?    @relation("StudentClass", fields: [classId], references: [id])
+  school           School?   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
   @@index([classId])
   @@index([armId])
-}
-
-enum Role {
-  SUPER_ADMIN
-  STUDENT
-  ADMIN
-  TEACHER
+  @@index([studentId])
 }
 
 model Class {
-  id       Int    @id @default(autoincrement())
-  name     String
-  schoolId Int
-
-  school   School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  isActive Boolean @default(true)
-
-  students User[]
-  videos   Video[]
-  arms     Arm[]
-  subjects Subject[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int       @id @default(autoincrement())
+  schoolId  Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  name      String
+  isActive  Boolean   @default(true)
+  teacherId Int?
+  arms      Arm[]
+  school    School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher   User?     @relation("ClassTeacher", fields: [teacherId], references: [id])
+  subjects  Subject[]
+  students  User[]    @relation("StudentClass")
+  videos    Video[]
 
   @@index([schoolId])
 }
 
 model Subject {
-  id   Int    @id @default(autoincrement())
-  name String
-
-  classId Int
-  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
-
+  id        Int      @id @default(autoincrement())
+  name      String
+  classId   Int
   teacherId Int?
-  teacher   User? @relation(fields: [teacherId], references: [id])
-
-  materials Video[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher   User?    @relation(fields: [teacherId], references: [id])
+  materials Video[]
 
   @@index([classId])
 }
 
 model Arm {
-  id      Int    @id @default(autoincrement())
-  name    String
-  classId Int
-  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
-
-  students  User[]
-  materials Video[]
-
+  id        Int      @id @default(autoincrement())
+  name      String
+  schoolId  Int?
+  classId   Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school    School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students  User[]
+  materials Video[]
 }
 
 model Video {
@@ -116,17 +104,16 @@ model Video {
   title       String
   description String?
   url         String
-  schoolId    Int
+  schoolId    Int?
   classId     Int
   duration    Int?
   uploadedAt  DateTime @default(now())
   armId       Int?
-
-  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  arm       Arm?     @relation(fields: [armId], references: [id])
-  subjectId Int?
-  subject   Subject? @relation(fields: [subjectId], references: [id])
+  subjectId   Int?
+  arm         Arm?     @relation(fields: [armId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school      School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subject     Subject? @relation(fields: [subjectId], references: [id])
 
   @@index([schoolId])
   @@index([classId])
@@ -139,11 +126,18 @@ model Subscription {
   status    Status   @default(ACTIVE)
   startDate DateTime @default(now())
   endDate   DateTime
-  amount    Int // Amount in kobo (₦500 = 50000 kobo)
+  amount    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+enum Role {
+  SUPER_ADMIN
+  STUDENT
+  ADMIN
+  TEACHER
 }
 
 enum Plan {

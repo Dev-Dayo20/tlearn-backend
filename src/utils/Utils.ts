@@ -13,7 +13,7 @@ export function isEmailValid(email: string): boolean {
 export async function queryWithRetry<T>(
   queryFn: () => Promise<T>,
   retries = 2,
-  delay = 500
+  delay = 500,
 ): Promise<T> {
   let lastError: any;
 
@@ -96,3 +96,4 @@ export function getTimeAgo(date: Date): string {
 
   return date.toLocaleDateString();
 }
+
