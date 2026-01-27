@@ -6,8 +6,12 @@ import { AppError } from "../../utils/AppError";
 export const getSchoolFromDomain = async (req: Request, res: Response) => {
   const { subdomain } = req.params;
 
-  if (!subdomain || !/^[a-z]+$/.test(subdomain)) {
-    throw new AppError("INvalid url", 400);
+  if (
+    !subdomain ||
+    typeof subdomain !== "string" ||
+    !/^[a-z0-9-]+$/.test(subdomain)
+  ) {
+    throw new AppError("Invalid url", 400);
   }
 
   const school = await queryWithRetry(() =>
@@ -19,7 +23,7 @@ export const getSchoolFromDomain = async (req: Request, res: Response) => {
         subdomain: true,
         logo: true,
       },
-    })
+    }),
   );
   if (!school) {
     throw new AppError("School not found", 404);

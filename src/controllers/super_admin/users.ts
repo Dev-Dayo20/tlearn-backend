@@ -16,7 +16,7 @@ export const getUsersMetrics = async (req: Request, res: Response) => {
               gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
             },
           },
-        })
+        }),
       ),
     ]);
   const growthRate =
@@ -80,7 +80,7 @@ export const getAllusers = async (req: Request, res: Response) => {
   }
 
   const totalUsers = await queryWithRetry(() =>
-    prisma.user.count({ where: whereConditions })
+    prisma.user.count({ where: whereConditions }),
   );
 
   // Get paginated users with school info
@@ -107,7 +107,7 @@ export const getAllusers = async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
-    })
+    }),
   );
 
   const totalPages = Math.ceil(totalUsers / limit);
@@ -137,16 +137,16 @@ export const userStatus = async (req: Request, res: Response) => {
     throw new AppError("Invalid type", 400);
   }
 
-  const userIdParse = parseInt(userId);
+  const userIdParse = parseInt(userId as string); // <-- Add 'as string'
   if (isNaN(userIdParse)) {
-    throw new AppError("INvalid user format", 400);
+    throw new AppError("Invalid user format", 400);
   }
 
   const user = await queryWithRetry(() =>
     prisma.user.update({
       where: { id: userIdParse },
       data: { isActive },
-    })
+    }),
   );
 
   res.status(200).json({

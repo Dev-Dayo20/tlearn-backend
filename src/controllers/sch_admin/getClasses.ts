@@ -101,7 +101,17 @@ export const getClasses = async (req: Request, res: Response) => {
 };
 
 export const getClassDetails = async (req: Request, res: Response) => {
-  const classId = parseInt(req.params.id);
+  const id = req.params.id;
+
+  if (!id || typeof id !== "string") {
+    throw new AppError("Invalid class ID", 400);
+  }
+
+  const classId = parseInt(id);
+  if (isNaN(classId)) {
+    throw new AppError("Invalid class ID format", 400);
+  }
+
   const school = req.school;
 
   const classData = await queryWithRetry(() =>

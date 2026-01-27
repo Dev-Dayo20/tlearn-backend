@@ -197,11 +197,10 @@ export const toggleSchoolStatus = async (req: Request, res: Response) => {
     throw new AppError("Invalid request type", 400);
   }
 
-  const schoolIdParse = parseInt(schoolId);
+  const schoolIdParse = parseInt(schoolId as string); // <-- Add 'as string'
   if (isNaN(schoolIdParse)) {
     throw new AppError("Invalid school format", 400);
   }
-
   const school = await queryWithRetry(() =>
     prisma.school.update({
       where: { id: schoolIdParse },
@@ -222,7 +221,7 @@ export const deleteSchool = async (req: Request, res: Response) => {
     throw new AppError("Missing required fields", 400);
   }
 
-  const schoolIdParse = parseInt(schoolId);
+  const schoolIdParse = parseInt(schoolId as string); // <-- Add 'as string'
   if (isNaN(schoolIdParse)) {
     throw new AppError("Invalid school format", 400);
   }
