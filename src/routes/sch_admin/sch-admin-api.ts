@@ -10,13 +10,14 @@ import {
   createStudents,
   getStudents,
 } from "../../controllers/sch_admin/students";
+import { createMaterial } from "../../controllers/sch_admin/materials";
 import { classes } from "../../controllers/sch_admin/createClass";
 
 // ========== MIDDLEWARES ==========
 import { authenticate } from "../../middlewares/auth";
 import { authSchoolUsersLogin } from "../../middlewares/loginMiddleware";
 import { requireSchAdmin } from "../../middlewares/requiredAccess";
-import { upload } from "../../middlewares/upload";
+import { upload, uploadVideo } from "../../middlewares/upload";
 
 const router = Router();
 
@@ -86,5 +87,15 @@ router.get(
   authSchoolUsersLogin,
   requireSchAdmin,
   getStudents,
+);
+
+// ========== SCHOOL ADMIN MATERIALS ==========
+router.post(
+  "/materials/create",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  uploadVideo.single("video"),
+  createMaterial,
 );
 export default router;

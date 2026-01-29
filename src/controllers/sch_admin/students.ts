@@ -167,6 +167,7 @@ export const getStudents = async (req: Request, res: Response) => {
         studentId: true,
         profilePicture: true,
         dateOfBirth: true,
+        isActive: true,
         class: { select: { id: true, name: true } },
         arm: { select: { id: true, name: true } },
         createdAt: true,

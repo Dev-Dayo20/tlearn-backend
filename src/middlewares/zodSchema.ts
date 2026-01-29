@@ -1,5 +1,4 @@
 import { email, z } from "zod";
-import { da } from "zod/v4/locales";
 
 export const SchoolLoginSchema = {
   ADMIN: z
@@ -79,4 +78,12 @@ export const createStudentSchema = z.object({
   armId: z.number().int().positive().optional(),
   dateOfBirth: z.string().optional().or(z.literal("")), // Optional date of birth
   profilePicture: z.string().url().nullable().optional().or(z.literal("")),
+});
+
+export const createMaterialSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  classId: z.coerce.number().int().positive(),
+  armId: z.coerce.number().int().positive().optional(),
+  subjectId: z.coerce.number().int().positive().optional(),
 });
