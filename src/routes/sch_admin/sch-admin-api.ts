@@ -10,7 +10,13 @@ import {
   createStudents,
   getStudents,
 } from "../../controllers/sch_admin/students";
-import { createMaterial } from "../../controllers/sch_admin/materials";
+import {
+  createMaterial,
+  getMaterials,
+  updateMaterial,
+  deleteMaterial,
+} from "../../controllers/sch_admin/materials";
+import { getDashboardStats } from "../../controllers/sch_admin/dashboard";
 import { classes } from "../../controllers/sch_admin/createClass";
 
 // ========== MIDDLEWARES ==========
@@ -97,5 +103,37 @@ router.post(
   requireSchAdmin,
   uploadVideo.single("video"),
   createMaterial,
+);
+router.get(
+  "/materials",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  getMaterials,
+);
+
+router.patch(
+  "/materials/:id",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  updateMaterial,
+);
+
+router.delete(
+  "/materials/:id",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  deleteMaterial,
+);
+
+// ========== SCHOOL ADMIN DASHBOARD ==========
+router.get(
+  "/dashboard/stats",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  getDashboardStats,
 );
 export default router;

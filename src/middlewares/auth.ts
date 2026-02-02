@@ -30,7 +30,7 @@ export const authenticate = (
   }
 
   if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-    throw new AppError("Token has expired. Please login again", 401);
+    throw new AppError("Session expired. Please login again", 401);
   }
 
   const tokenVerify = verifyToken(token);

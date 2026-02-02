@@ -87,3 +87,20 @@ export const createMaterialSchema = z.object({
   armId: z.coerce.number().int().positive().optional(),
   subjectId: z.coerce.number().int().positive().optional(),
 });
+
+export const getMaterialsSchema = z.object({
+  search: z.string().max(100).trim().optional(),
+  classId: z.coerce.number().int().positive().optional(),
+  armId: z.coerce.number().int().positive().optional(),
+  subjectId: z.coerce.number().int().positive().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().default(10),
+});
+
+export const updateMaterialSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().optional().nullable(),
+  classId: z.coerce.number().int().positive().optional(),
+  armId: z.coerce.number().int().positive().optional().nullable(),
+  subjectId: z.coerce.number().int().positive().optional().nullable(),
+});
