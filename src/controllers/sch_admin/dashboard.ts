@@ -3,6 +3,14 @@ import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
 
+// Helper to safely extract settled promise results
+const getSettledValue = <T>(
+  result: PromiseSettledResult<T>,
+  fallback: T,
+): T => {
+  return result.status === "fulfilled" ? result.value : fallback;
+};
+
 export const getDashboardStats = async (req: Request, res: Response) => {
   const school = req.school;
   if (!school) {
@@ -12,20 +20,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Run all queries in parallel for performance
-  const [
-    totalStudents,
-    activeStudents,
-    inactiveStudents,
-    newEnrollments,
-    classDistribution,
-    // Extra useful metrics
-    totalClasses,
-    totalMaterials,
-    armDistribution,
-    subjectDistribution,
-    recentMaterials,
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     // Total students
     queryWithRetry(() =>
       prisma.user.count({
@@ -164,6 +159,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }),
     ),
   ]);
+
+  // Extract values with fallbacks
+  const totalStudents = getSettledValue(results[0], 0);
+  const activeStudents = getSettledValue(results[1], 0);
+  const inactiveStudents = getSettledValue(results[2], 0);
+  const newEnrollments = getSettledValue(results[3], 0);
+  const classDistribution = getSettledValue(results[4], []);
+  const totalClasses = getSettledValue(results[5], 0);
+  const totalMaterials = getSettledValue(results[6], 0);
+  const armDistribution = getSettledValue(results[7], []);
+  const subjectDistribution = getSettledValue(results[8], []);
+  const recentMaterials = getSettledValue(results[9], []);
 
   // Format class distribution to { name, value }
   const formattedClassDistribution = classDistribution.map((cls) => ({
