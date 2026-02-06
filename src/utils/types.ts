@@ -9,8 +9,9 @@ export interface AUthPayload {
 }
 
 export interface SchoolUsersPayload {
-  id: number | null;
+  id: number;
   role: string;
+  schoolId: number;
   exp?: number;
   iat?: number;
 }

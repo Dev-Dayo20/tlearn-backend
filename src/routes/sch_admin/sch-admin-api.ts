@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { getSchoolFromDomain } from "../../controllers/sch_admin/gerSchoolFromDomain";
-import { SchoolUsersLogin } from "../../controllers/sch_admin/schoolAutth";
+import {
+  SchoolUsersLogin,
+  refreshAccessToken,
+  logout,
+} from "../../controllers/sch_admin/schoolAutth";
 import { createClass } from "../../controllers/sch_admin/createClass";
 import { getClasses } from "../../controllers/sch_admin/getClasses";
 import { getClassDetails } from "../../controllers/sch_admin/getClasses";
@@ -15,6 +19,7 @@ import {
   getMaterials,
   updateMaterial,
   deleteMaterial,
+  getStudentAnalytics,
 } from "../../controllers/sch_admin/materials";
 import { getDashboardStats } from "../../controllers/sch_admin/dashboard";
 import { classes } from "../../controllers/sch_admin/createClass";
@@ -93,6 +98,14 @@ router.get(
   authSchoolUsersLogin,
   requireSchAdmin,
   getStudents,
+);
+
+router.get(
+  "/students/:id/analytics",
+  authenticate,
+  authSchoolUsersLogin,
+  requireSchAdmin,
+  getStudentAnalytics,
 );
 
 // ========== SCHOOL ADMIN MATERIALS ==========

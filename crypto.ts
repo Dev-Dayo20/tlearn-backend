@@ -5,4 +5,4 @@ const generateKey = () => {
 };
 
 const generate = generateKey();
-// console.log(generate);
+console.log(generate);

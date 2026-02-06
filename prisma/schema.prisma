@@ -28,25 +28,26 @@ model School {
 }
 
 model User {
-  id               Int       @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   name             String
-  email            String?   @unique
+  email            String?         @unique
   password         String?
   profilePicture   String?
   dateOfBirth      DateTime?
-  role             Role      @default(SUPER_ADMIN)
-  studentId        String?   @unique
+  role             Role            @default(SUPER_ADMIN)
+  studentId        String?         @unique
   schoolId         Int?
   classId          Int?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  isActive         Boolean   @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  isActive         Boolean         @default(true)
   armId            Int?
-  classes          Class[]   @relation("ClassTeacher")
+  classes          Class[]         @relation("ClassTeacher")
   teachingSubjects Subject[]
-  arm              Arm?      @relation(fields: [armId], references: [id])
-  class            Class?    @relation("StudentClass", fields: [classId], references: [id])
-  school           School?   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  arm              Arm?            @relation(fields: [armId], references: [id])
+  class            Class?          @relation("StudentClass", fields: [classId], references: [id])
+  school           School?         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  videoProgresses  VideoProgress[]
 
   @@index([schoolId])
   @@index([classId])
@@ -100,20 +101,21 @@ model Arm {
 }
 
 model Video {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  url         String
-  schoolId    Int?
-  classId     Int
-  duration    Int?
-  uploadedAt  DateTime @default(now())
-  armId       Int?
-  subjectId   Int?
-  arm         Arm?     @relation(fields: [armId], references: [id])
-  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  school      School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  subject     Subject? @relation(fields: [subjectId], references: [id])
+  id              Int             @id @default(autoincrement())
+  title           String
+  description     String?
+  url             String
+  schoolId        Int?
+  classId         Int
+  duration        Int?
+  uploadedAt      DateTime        @default(now())
+  armId           Int?
+  subjectId       Int?
+  arm             Arm?            @relation(fields: [armId], references: [id])
+  class           Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school          School?         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subject         Subject?        @relation(fields: [subjectId], references: [id])
+  videoProgresses VideoProgress[]
 
   @@index([schoolId])
   @@index([classId])
@@ -131,6 +133,25 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model VideoProgress {
+  id              Int      @id @default(autoincrement())
+  studentId       Int
+  videoId         Int
+  watchedDuration Int      @default(0) // Seconds watched
+  progressPercent Int      @default(0) // Percentage watched (0-100)
+  isCompleted     Boolean  @default(false) // True if watched >= 90%
+  lastWatchedAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  video   Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, videoId]) // Each student has one progress record per video
+  @@index([studentId])
+  @@index([videoId])
 }
 
 enum Role {

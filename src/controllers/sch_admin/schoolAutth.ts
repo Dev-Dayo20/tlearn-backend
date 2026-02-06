@@ -1,84 +1,165 @@
-import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { isEmailValid } from "../../utils/Utils";
 import { prisma } from "../../utils/prismaClient";
 import { SchoolUsersPayload } from "../../utils/types";
 import { SchoolLoginSchema } from "../../middlewares/zodSchema";
 import { queryWithRetry } from "../../utils/Utils";
-import { generateSchoolUserToken } from "../../utils/Utils";
+import {
+  generateSchoolUserToken,
+  generateSchoolUserRefreshToken,
+  verifyRefreshToken,
+} from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../utils/asyncHandler";
 
-export const SchoolUsersLogin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  const { role } = req.body;
-  const school = req.school;
+export const SchoolUsersLogin = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { role } = req.body;
+    const school = req.school;
 
-  if (!role) {
-    throw new AppError("Missing required fields", 401);
-  }
+    if (!role) {
+      throw new AppError("Missing required fields", 401);
+    }
 
-  if (!school) {
-    throw new AppError("Unauthorized access", 401);
-  }
+    if (!school) {
+      throw new AppError("Unauthorized access", 401);
+    }
 
-  if (!["ADMIN", "STUDENT", "TEACHER"].includes(role)) {
-    throw new AppError("Invalid role", 401);
-  }
+    if (!["ADMIN", "STUDENT", "TEACHER"].includes(role)) {
+      throw new AppError("Invalid role", 401);
+    }
 
-  type Role = "ADMIN" | "STUDENT" | "TEACHER";
+    type Role = "ADMIN" | "STUDENT" | "TEACHER";
 
-  const schema = SchoolLoginSchema[role as Role];
-  const validatedData = schema.safeParse(req.body);
-  // console.log(validatedData);
+    const schema = SchoolLoginSchema[role as Role];
+    const validatedData = schema.safeParse(req.body);
 
-  if (!validatedData.success) {
-    throw new AppError("Validation failed", 400);
-  }
+    if (!validatedData.success) {
+      throw new AppError("Validation failed", 400);
+    }
 
-  const data = validatedData.data;
-  let user;
+    const data = validatedData.data;
+    let user;
 
-  if (data.schoolId !== school.id) {
-    throw new AppError("Invalid school access", 401);
-  }
+    if (data.schoolId !== school.id) {
+      throw new AppError("Invalid school access", 401);
+    }
 
-  if (data.role === "STUDENT") {
-    user = await queryWithRetry(() =>
+    if (data.role === "STUDENT") {
+      user = await queryWithRetry(() =>
+        prisma.user.findFirst({
+          where: {
+            studentId: data.studentId,
+            role: "STUDENT",
+            schoolId: school?.id,
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            studentId: true,
+            schoolId: true,
+            classId: true,
+            arm: true,
+            isActive: true,
+          },
+        }),
+      );
+
+      if (!user) {
+        throw new AppError("User not found", 404);
+      }
+    } else {
+      user = await queryWithRetry(() =>
+        prisma.user.findFirst({
+          where: {
+            email: data.email,
+            role: data.role,
+            schoolId: school?.id,
+            isActive: true,
+          },
+        }),
+      );
+
+      if (!user) {
+        throw new AppError("User not found", 404);
+      }
+
+      if (!user.password) {
+        throw new AppError("Password not set for this user.", 401);
+      }
+
+      const passwordMatch = await bcrypt.compare(data.password, user.password);
+      if (!passwordMatch) {
+        throw new AppError("Invalid credentials", 401);
+      }
+
+      const { password, ...userWithoutPassword } = user;
+      user = userWithoutPassword;
+    }
+
+    if (!user.schoolId) {
+      throw new AppError(
+        "Internal Error: User missing school association",
+        500,
+      );
+    }
+
+    const payload: SchoolUsersPayload = {
+      id: user.id,
+      role: user.role,
+      schoolId: user.schoolId,
+    };
+    const token = generateSchoolUserToken(payload);
+
+    const refreshTokenPayload = {
+      id: user.id,
+      role: user.role,
+      schoolId: user.schoolId,
+    };
+    const refreshToken = generateSchoolUserRefreshToken(refreshTokenPayload);
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      domain:
+        process.env.NODE_ENV === "production" ? ".tlearn.africa" : undefined,
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Login successful.",
+      accessToken: token,
+      user,
+    });
+  },
+);
+
+export const refreshAccessToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      throw new AppError("Refresh token required", 401);
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+
+    const user = await queryWithRetry(() =>
       prisma.user.findFirst({
         where: {
-          studentId: data.studentId,
-          role: "STUDENT",
-          schoolId: school?.id,
+          id: decoded.id,
+          schoolId: decoded.schoolId,
           isActive: true,
         },
         select: {
           id: true,
-          name: true,
-          email: true,
           role: true,
-          studentId: true,
           schoolId: true,
-          classId: true,
-          arm: true,
-          isActive: true,
-        },
-      }),
-    );
-
-    if (!user) {
-      throw new AppError("User not found", 404);
-    }
-  } else {
-    user = await queryWithRetry(() =>
-      prisma.user.findFirst({
-        where: {
-          email: data.email,
-          role: data.role,
-          schoolId: school?.id,
-          isActive: true,
         },
       }),
     );
@@ -87,30 +168,32 @@ export const SchoolUsersLogin = async (
       throw new AppError("User not found", 404);
     }
 
-    if (!user.password) {
-      throw new AppError("Password not set for this user.", 401);
+    if (!user.schoolId) {
+      throw new AppError(
+        "Internal Error: User missing school association",
+        500,
+      );
     }
 
-    const passwordMatch = await bcrypt.compare(data.password, user.password);
-    if (!passwordMatch) {
-      throw new AppError("Invalid credentials", 401);
-    }
+    // Generate new access token
+    const newAccessToken = generateSchoolUserToken({
+      id: user.id,
+      role: user.role,
+      schoolId: user.schoolId,
+    });
 
-    const { password, ...userWithoutPassword } = user;
-    user = userWithoutPassword;
-  }
+    res.json({
+      success: true,
+      accessToken: newAccessToken,
+    });
+  },
+);
 
-  const payload: SchoolUsersPayload = {
-    id: user.schoolId,
-    role: user.role,
-  };
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  res.clearCookie("refreshToken");
 
-  const token = generateSchoolUserToken(payload);
-
-  res.status(200).json({
+  res.json({
     success: true,
-    message: "Login successful.",
-    token,
-    user,
+    message: "Logged out successfully",
   });
-};
+});

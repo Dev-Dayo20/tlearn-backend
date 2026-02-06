@@ -30,14 +30,6 @@ export const getClasses = async (req: Request, res: Response) => {
     conditions.isActive = isActive === "true";
   }
 
-  if (req.user?.role !== "ADMIN") {
-    throw new AppError("Unauthorized Access", 401);
-  }
-
-  if (req.user.id !== req.school?.id) {
-    throw new AppError("Unauthorized Access. Invalid", 401);
-  }
-
   // Get total count
   const totalClasses = await queryWithRetry(() =>
     prisma.class.count({ where: conditions }),

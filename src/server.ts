@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import helmet from "helmet";
 dotenv.config();
@@ -26,7 +27,7 @@ app.use(
       },
     },
     crossOriginEmbedderPolicy: false,
-  })
+  }),
 );
 
 app.use(
@@ -34,9 +35,10 @@ app.use(
     origin:
       process.env.NODE_ENV === "production"
         ? [
-            "https://tlearn.com",
-            "https://www.tlearn.com",
-            "https://tlearn-ten.vercel.app",
+            "https://tlearn.africa",
+            "https://admin.tlearn.africa",
+            "https://*.tlearn.africa", // Wildcard for schools
+            // "https://tlearn-ten.vercel.app",
           ]
         : [
             "http://localhost:8080",
@@ -47,10 +49,11 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-School-Subdomain"],
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use("/tlearn", mainRouter);
 
@@ -72,13 +75,7 @@ app.get("/healthz", (_, res) => {
   res.status(200).send("ok");
 });
 
-// Global error handler
-app.use((err: any, req: Request, res: Response, next: any) => {
-  console.error("Error:", err);
-  res.status(err.status || 500).json({
-    error: err.message || "Internal server error",
-  });
-});
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running `);
@@ -86,5 +83,3 @@ app.listen(PORT, () => {
   console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
   // console.log(`🔒 Security headers enabled`);
 });
-
-app.use(errorHandler);

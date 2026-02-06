@@ -47,11 +47,39 @@ function getSecretKey(): string {
   return secret;
 }
 
+//FUNCTION TO GENERATE REFRESH SECRET KEY
+function getRefreshKey(): string {
+  const secret = process.env.REFRESH_SECRET_KEY;
+  if (!secret) {
+    throw new Error(
+      "REFRESH_SECRET_KEY is not defined in environment variables",
+    );
+  }
+  return secret;
+}
+
 // FUNCTION TO GENERATE SCHOOL USER TOKEN
 export function generateSchoolUserToken(payload: SchoolUsersPayload): string {
   return jwt.sign(payload, getSecretKey(), {
     expiresIn: "30m",
   });
+}
+
+export function generateSchoolUserRefreshToken(
+  payload: SchoolUsersPayload,
+): string {
+  return jwt.sign(payload, getRefreshKey(), {
+    algorithm: "HS256",
+    expiresIn: "7d",
+  });
+}
+
+export function verifyRefreshToken(token: string): SchoolUsersPayload {
+  try {
+    return jwt.verify(token, getRefreshKey()) as SchoolUsersPayload;
+  } catch (error) {
+    throw new AppError("Invalid or expired token", 401);
+  }
 }
 
 // FUNCTION TO GENERATE TOKEN
@@ -96,4 +124,3 @@ export function getTimeAgo(date: Date): string {
 
   return date.toLocaleDateString();
 }
-

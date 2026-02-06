@@ -110,15 +110,10 @@ export const requireSchAdmin = (
   }
 
   // Check if user's school matches the subdomain school
-  if (req.user.id !== req.school.id) {
+  if (req.user.schoolId !== req.school.id) {
     throw new AppError("Access denied. You don't belong to this school.", 403);
   }
 
-  // const user = req.user;
-  // const school = req.school;
-
-  // console.log(user);
-  // console.log(school);
   next();
 };
 

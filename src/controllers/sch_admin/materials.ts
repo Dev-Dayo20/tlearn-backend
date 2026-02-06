@@ -5,11 +5,13 @@ import { AppError } from "../../utils/AppError";
 import {
   createMaterialSchema,
   updateMaterialSchema,
+  getMaterialsSchema,
 } from "../../middlewares/zodSchema";
 import {
   deleteVideoFromCloudinary,
   uploadVideoToCloudinary,
 } from "../../utils/uploadImage";
+import { getStudentForAnalytics } from "../../services/sch-admin.services";
 
 export const createMaterial = async (req: Request, res: Response) => {
   const validatedData = createMaterialSchema.safeParse(req.body);
@@ -131,8 +133,6 @@ export const createMaterial = async (req: Request, res: Response) => {
     material,
   });
 };
-
-import { getMaterialsSchema } from "../../middlewares/zodSchema";
 
 export const getMaterials = async (req: Request, res: Response) => {
   const school = req.school;
@@ -372,5 +372,223 @@ export const deleteMaterial = async (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: "Material deleted successfully",
+  });
+};
+
+export const updateVideoProgress = async (req: Request, res: Response) => {
+  const user = req.user;
+  const videoId = parseInt(req.params.videoId as string);
+  const { watchedDuration, videoDuration } = req.body;
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (!videoId) {
+    throw new AppError("Video ID is required", 400);
+  }
+
+  if (!watchedDuration || !videoDuration) {
+    throw new AppError("Watched duration and video duration are required", 400);
+  }
+
+  // Calculate progress percentage
+  const progressPercent = Math.min(
+    Math.round((watchedDuration / videoDuration) * 100),
+    100,
+  );
+
+  // Consider completed if watched 90% or more
+  const isCompleted = progressPercent >= 90;
+
+  // Upsert (update if exists, create if doesn't)
+  const progress = await queryWithRetry(() =>
+    prisma.videoProgress.upsert({
+      where: {
+        studentId_videoId: {
+          studentId: user.id,
+          videoId: videoId,
+        },
+      },
+      update: {
+        watchedDuration,
+        progressPercent,
+        isCompleted,
+        lastWatchedAt: new Date(),
+      },
+      create: {
+        studentId: user.id,
+        videoId: videoId,
+        watchedDuration,
+        progressPercent,
+        isCompleted,
+      },
+    }),
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Progress updated",
+    progress,
+  });
+};
+
+export const getStudentAnalytics = async (req: Request, res: Response) => {
+  const school = req.school;
+  if (!school) {
+    throw new AppError("School not found", 404);
+  }
+
+  const studentId = parseInt(req.params.id as string);
+
+  // Get all student data in one call
+  const { student, stats, classMaterials } = await getStudentForAnalytics({
+    schoolId: school.id,
+    studentId,
+  });
+
+  if (!student) {
+    throw new AppError("Student not found", 404);
+  }
+
+  // Calculate overall progress
+  const progress =
+    stats.totalMaterials > 0
+      ? Math.round((stats.completedCount / stats.totalMaterials) * 100)
+      : 0;
+
+  // Determine enrollment status based on progress
+  let enrollmentStatus: "Active" | "Warning" | "Inactive";
+  if (!student.isActive) {
+    enrollmentStatus = "Inactive";
+  } else if (progress < 30) {
+    enrollmentStatus = "Warning";
+  } else {
+    enrollmentStatus = "Active";
+  }
+
+  // Completed materials (watched >= 90%)
+  const completedMaterials = classMaterials
+    .filter((m) => m.videoProgresses[0]?.isCompleted)
+    .slice(0, 10)
+    .map((material) => ({
+      title: material.title,
+      date: material.videoProgresses[0].lastWatchedAt.toISOString(),
+      progress: material.videoProgresses[0].progressPercent,
+    }));
+
+  // Pending materials (not started or < 90% watched)
+  const pendingMaterials = classMaterials
+    .filter((m) => !m.videoProgresses[0]?.isCompleted)
+    .slice(0, 10)
+    .map((material) => ({
+      title: material.title,
+      progress: material.videoProgresses[0]?.progressPercent || 0,
+      dueDate: new Date(
+        material.uploadedAt.getTime() + 14 * 24 * 60 * 60 * 1000,
+      ).toISOString(), // 2 weeks from upload
+    }));
+
+  // Subject performance based on completion rates
+  const subjectGroups = classMaterials.reduce(
+    (acc, material) => {
+      const subjectName = material.subject?.name || "General";
+      if (!acc[subjectName]) {
+        acc[subjectName] = { total: 0, completed: 0 };
+      }
+      acc[subjectName].total++;
+      if (material.videoProgresses[0]?.isCompleted) {
+        acc[subjectName].completed++;
+      }
+      return acc;
+    },
+    {} as Record<string, { total: number; completed: number }>,
+  );
+
+  const subjectPerformance = Object.entries(subjectGroups).map(
+    ([subject, stats]) => ({
+      subject,
+      score:
+        stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+      fullMark: 100,
+    }),
+  );
+
+  // Progress timeline (last 8 weeks)
+  const weeksAgo = 8;
+  const progressTimeline = await Promise.all(
+    Array.from({ length: weeksAgo }, async (_, i) => {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - (weeksAgo - i) * 7);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      const weeklyProgress = await queryWithRetry(() =>
+        prisma.videoProgress.findMany({
+          where: {
+            studentId: student.id,
+            lastWatchedAt: {
+              gte: weekStart,
+              lt: weekEnd,
+            },
+          },
+          select: {
+            progressPercent: true,
+            isCompleted: true,
+          },
+        }),
+      );
+
+      const avgProgress =
+        weeklyProgress.length > 0
+          ? Math.round(
+              weeklyProgress.reduce((sum, p) => sum + p.progressPercent, 0) /
+                weeklyProgress.length,
+            )
+          : 0;
+
+      const completionRate =
+        weeklyProgress.length > 0
+          ? Math.round(
+              (weeklyProgress.filter((p) => p.isCompleted).length /
+                weeklyProgress.length) *
+                100,
+            )
+          : 0;
+
+      return {
+        week: `Week ${i + 1}`,
+        progress: avgProgress,
+        completion: completionRate,
+      };
+    }),
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Student analytics retrieved successfully",
+    analytics: {
+      student: {
+        id: student.id.toString(),
+        name: student.name,
+        class:
+          student?.class?.name +
+          (student?.arm ? ` - ${student?.arm?.name}` : ""),
+        avatar: student.profilePicture || "",
+        enrollmentStatus,
+        email: student.email || "",
+        phone: "", // Add to schema if needed
+        joinedDate: student.createdAt.toISOString(),
+        progress,
+      },
+      studentDetails: {
+        progressTimeline,
+        subjectPerformance,
+        completedMaterials,
+        pendingMaterials,
+        teacherNotes: [],
+      },
+    },
   });
 };

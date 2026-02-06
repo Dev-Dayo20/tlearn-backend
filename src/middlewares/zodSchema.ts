@@ -23,7 +23,10 @@ export const SchoolLoginSchema = {
     .object({
       studentId: z
         .string()
-        .regex(/^STU-\d{4}-\d{5}$/, "Invalid student ID format")
+        .regex(
+          /^[A-Z]{3}\/[A-Z]{3}\/\d{5}$/,
+          "Invalid student ID format (e.g., MUW/NUR/00009)",
+        )
         .toUpperCase(),
       role: z.literal("STUDENT"),
       schoolId: z.number().int().positive(),
