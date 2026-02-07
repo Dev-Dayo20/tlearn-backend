@@ -32,21 +32,36 @@ app.use(
 
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? [
-            "https://tlearn.africa",
-            "https://admin.tlearn.africa",
-            "https://*.tlearn.africa", // Wildcard for schools
-            // "https://tlearn-ten.vercel.app",
-            // "https://muwaaf.tlearn.africa",
-          ]
-        : [
-            "http://localhost:8080",
-            "http://localhost:5173",
-            /^http:\/\/[a-z]+\.localhost:8080$/, // ✅ Only lowercase letters
-            /^http:\/\/[a-z]+\.localhost:5173$/, // ✅ Only lowercase letters
-          ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins =
+        process.env.NODE_ENV === "production"
+          ? ["https://tlearn.africa", "https://admin.tlearn.africa"]
+          : ["http://localhost:8080", "http://localhost:5173"];
+
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Check if origin matches wildcard pattern for school subdomains
+      const productionWildcard = /^https:\/\/[a-z0-9-]+\.tlearn\.africa$/;
+      const devWildcard = /^http:\/\/[a-z0-9-]+\.localhost:(8080|5173)$/;
+
+      const wildcardPattern =
+        process.env.NODE_ENV === "production"
+          ? productionWildcard
+          : devWildcard;
+
+      if (wildcardPattern.test(origin)) {
+        return callback(null, true);
+      }
+
+      // Reject all other origins
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-School-Subdomain"],
