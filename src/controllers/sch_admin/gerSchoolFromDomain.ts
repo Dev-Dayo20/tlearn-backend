@@ -2,36 +2,39 @@ import { prisma } from "../../utils/prismaClient";
 import { Request, Response } from "express";
 import { queryWithRetry } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../utils/asyncHandler";
 
-export const getSchoolFromDomain = async (req: Request, res: Response) => {
-  const { subdomain } = req.params;
+export const getSchoolFromDomain = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { subdomain } = req.params;
 
-  if (
-    !subdomain ||
-    typeof subdomain !== "string" ||
-    !/^[a-z0-9-]+$/.test(subdomain)
-  ) {
-    throw new AppError("Invalid url", 400);
-  }
+    if (
+      !subdomain ||
+      typeof subdomain !== "string" ||
+      !/^[a-z0-9-]+$/.test(subdomain)
+    ) {
+      throw new AppError("Invalid url", 400);
+    }
 
-  const school = await queryWithRetry(() =>
-    prisma.school.findUnique({
-      where: { subdomain: subdomain },
-      select: {
-        id: true,
-        name: true,
-        subdomain: true,
-        logo: true,
-      },
-    }),
-  );
-  if (!school) {
-    throw new AppError("School not found", 404);
-  }
+    const school = await queryWithRetry(() =>
+      prisma.school.findUnique({
+        where: { subdomain: subdomain },
+        select: {
+          id: true,
+          name: true,
+          subdomain: true,
+          logo: true,
+        },
+      }),
+    );
+    if (!school) {
+      throw new AppError("School not found", 404);
+    }
 
-  res.status(200).json({
-    success: true,
-    message: "School fetched successfully",
-    school,
-  });
-};
+    res.status(200).json({
+      success: true,
+      message: "School fetched successfully",
+      school,
+    });
+  },
+);

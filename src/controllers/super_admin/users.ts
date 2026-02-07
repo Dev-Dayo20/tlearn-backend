@@ -2,39 +2,42 @@ import { Request, Response } from "express";
 import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../utils/asyncHandler";
 
-export const getUsersMetrics = async (req: Request, res: Response) => {
-  const [totalUsers, totalAdmins, totalStudents, recentUsers] =
-    await Promise.all([
-      queryWithRetry(() => prisma.user.count()),
-      queryWithRetry(() => prisma.user.count({ where: { role: "ADMIN" } })),
-      queryWithRetry(() => prisma.user.count({ where: { role: "STUDENT" } })),
-      queryWithRetry(() =>
-        prisma.user.count({
-          where: {
-            createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+export const getUsersMetrics = asyncHandler(
+  async (req: Request, res: Response) => {
+    const [totalUsers, totalAdmins, totalStudents, recentUsers] =
+      await Promise.all([
+        queryWithRetry(() => prisma.user.count()),
+        queryWithRetry(() => prisma.user.count({ where: { role: "ADMIN" } })),
+        queryWithRetry(() => prisma.user.count({ where: { role: "STUDENT" } })),
+        queryWithRetry(() =>
+          prisma.user.count({
+            where: {
+              createdAt: {
+                gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+              },
             },
-          },
-        }),
-      ),
-    ]);
-  const growthRate =
-    totalUsers > 0 ? ((recentUsers / totalUsers) * 100).toFixed(1) : "0.0";
+          }),
+        ),
+      ]);
+    const growthRate =
+      totalUsers > 0 ? ((recentUsers / totalUsers) * 100).toFixed(1) : "0.0";
 
-  res.status(200).json({
-    success: true,
-    metrics: {
-      totalUsers,
-      totalAdmins,
-      totalStudents,
-      growthRate: `${growthRate}%`,
-      recentUsers, // Users added in last 30 days
-    },
-  });
-};
+    res.status(200).json({
+      success: true,
+      metrics: {
+        totalUsers,
+        totalAdmins,
+        totalStudents,
+        growthRate: `${growthRate}%`,
+        recentUsers, // Users added in last 30 days
+      },
+    });
+  },
+);
 
-export const getAllusers = async (req: Request, res: Response) => {
+export const getAllusers = asyncHandler(async (req: Request, res: Response) => {
   const { search, role, page = "1", pageSize = "10" } = req.query;
 
   const pageNumber = parseInt(page as string, 10);
@@ -124,9 +127,9 @@ export const getAllusers = async (req: Request, res: Response) => {
       hasPreviousPage: pageNumber > 1,
     },
   });
-};
+});
 
-export const userStatus = async (req: Request, res: Response) => {
+export const userStatus = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
   const { isActive } = req.body;
 
@@ -153,4 +156,4 @@ export const userStatus = async (req: Request, res: Response) => {
     success: true,
     message: `User ${isActive ? "activated" : "deactivated"} successfuly`,
   });
-};
+});

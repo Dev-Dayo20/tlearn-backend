@@ -3,8 +3,9 @@ import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
 import { createClassSchema } from "../../middlewares/zodSchema";
 import { AppError } from "../../utils/AppError";
+import { asyncHandler } from "../../utils/asyncHandler";
 
-export const createClass = async (req: Request, res: Response) => {
+export const createClass = asyncHandler(async (req: Request, res: Response) => {
   const validatedData = createClassSchema.safeParse(req.body);
 
   if (!validatedData.success) {
@@ -71,9 +72,9 @@ export const createClass = async (req: Request, res: Response) => {
   res
     .status(201)
     .json({ success: true, message: "Class created successfully", newClass });
-};
+});
 
-export const classes = async (req: Request, res: Response) => {
+export const classes = asyncHandler( async (req: Request, res: Response) => {
   const school = req.school;
   if (!school) {
     throw new AppError("School not found", 404);
@@ -95,4 +96,4 @@ export const classes = async (req: Request, res: Response) => {
     message: "Classes retrieved successfully",
     classes,
   });
-};
+})

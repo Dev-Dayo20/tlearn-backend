@@ -2,10 +2,10 @@ import { Request, Response } from "express";
 import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
-import { contains } from "validator";
 import { getClassesSchema } from "../../middlewares/zodSchema";
+import { asyncHandler } from "../../utils/asyncHandler";
 
-export const getClasses = async (req: Request, res: Response) => {
+export const getClasses = asyncHandler(async (req: Request, res: Response) => {
   const validatedQuery = getClassesSchema.safeParse(req.query);
 
   if (!validatedQuery.success) {
@@ -90,56 +90,58 @@ export const getClasses = async (req: Request, res: Response) => {
       hasPreviousPage: page > 1,
     },
   });
-};
+});
 
-export const getClassDetails = async (req: Request, res: Response) => {
-  const id = req.params.id;
+export const getClassDetails = asyncHandler(
+  async (req: Request, res: Response) => {
+    const id = req.params.id;
 
-  if (!id || typeof id !== "string") {
-    throw new AppError("Invalid class ID", 400);
-  }
+    if (!id || typeof id !== "string") {
+      throw new AppError("Invalid class ID", 400);
+    }
 
-  const classId = parseInt(id);
-  if (isNaN(classId)) {
-    throw new AppError("Invalid class ID format", 400);
-  }
+    const classId = parseInt(id);
+    if (isNaN(classId)) {
+      throw new AppError("Invalid class ID format", 400);
+    }
 
-  const school = req.school;
+    const school = req.school;
 
-  const classData = await queryWithRetry(() =>
-    prisma.class.findFirst({
-      where: {
-        id: classId,
-        schoolId: school?.id,
-      },
-      include: {
-        subjects: {
-          include: {
-            teacher: {
-              select: { id: true, name: true, email: true },
+    const classData = await queryWithRetry(() =>
+      prisma.class.findFirst({
+        where: {
+          id: classId,
+          schoolId: school?.id,
+        },
+        include: {
+          subjects: {
+            include: {
+              teacher: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+          arms: true,
+          students: {
+            include: {
+              arm: true,
+            },
+          },
+          _count: {
+            select: {
+              students: true,
+              subjects: true,
+              arms: true,
+              videos: true,
             },
           },
         },
-        arms: true,
-        students: {
-          include: {
-            arm: true,
-          },
-        },
-        _count: {
-          select: {
-            students: true,
-            subjects: true,
-            arms: true,
-            videos: true,
-          },
-        },
-      },
-    }),
-  );
+      }),
+    );
 
-  if (!classData) {
-    throw new AppError("Class not found", 404);
-  }
-  res.status(200).json({ success: true, classData });
-};
+    if (!classData) {
+      throw new AppError("Class not found", 404);
+    }
+    res.status(200).json({ success: true, classData });
+  },
+);

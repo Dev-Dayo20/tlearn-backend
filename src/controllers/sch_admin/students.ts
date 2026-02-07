@@ -4,123 +4,126 @@ import { queryWithRetry } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
 import { createStudentSchema } from "../../middlewares/zodSchema";
 import { uploadToCloudinary } from "../../utils/uploadImage";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 const makePrefix = (value: string, length = 3): string => {
   return value.replace(/\s+/g, "").toUpperCase().slice(0, length);
 };
 
-export const createStudents = async (req: Request, res: Response) => {
-  const validation = createStudentSchema.safeParse(req.body);
+export const createStudents = asyncHandler(
+  async (req: Request, res: Response) => {
+    const validation = createStudentSchema.safeParse(req.body);
 
-  if (!validation.success) {
-    throw new AppError("Invalid input", 400);
-  }
+    if (!validation.success) {
+      throw new AppError("Invalid input", 400);
+    }
 
-  const { name, email, classId, armId, dateOfBirth, profilePicture } =
-    validation.data;
+    const { name, email, classId, armId, dateOfBirth, profilePicture } =
+      validation.data;
 
-  // Upload profile picture if provided
-  let profilePictureUrl: string | null = null;
-  if (req.file) {
-    profilePictureUrl = await uploadToCloudinary(req.file);
-  } else {
-    profilePictureUrl = profilePicture || null;
-  }
+    // Upload profile picture if provided
+    let profilePictureUrl: string | null = null;
+    if (req.file) {
+      profilePictureUrl = await uploadToCloudinary(req.file);
+    } else {
+      profilePictureUrl = profilePicture || null;
+    }
 
-  const school = req.school;
+    const school = req.school;
 
-  const classExists = await queryWithRetry(() =>
-    prisma.class.findFirst({
-      where: { id: classId, schoolId: school?.id },
-    }),
-  );
-
-  if (!classExists) {
-    throw new AppError("Class not found", 404);
-  }
-
-  // Check arm belongs to class (if provided)
-  if (armId) {
-    const armExists = await queryWithRetry(() =>
-      prisma.arm.findFirst({
-        where: { id: armId, classId },
+    const classExists = await queryWithRetry(() =>
+      prisma.class.findFirst({
+        where: { id: classId, schoolId: school?.id },
       }),
     );
 
-    if (!armExists) {
-      throw new AppError("Arm not found in this class", 404);
+    if (!classExists) {
+      throw new AppError("Class not found", 404);
     }
-  }
 
-  // Check email unique (if provided)
-  if (email) {
-    const emailExists = await queryWithRetry(() =>
-      prisma.user.findUnique({ where: { email } }),
-    );
+    // Check arm belongs to class (if provided)
+    if (armId) {
+      const armExists = await queryWithRetry(() =>
+        prisma.arm.findFirst({
+          where: { id: armId, classId },
+        }),
+      );
 
-    if (emailExists) {
-      throw new AppError("Email already in use", 409);
+      if (!armExists) {
+        throw new AppError("Arm not found in this class", 404);
+      }
     }
-  }
 
-  // Generate unique student ID
-  const year = new Date().getFullYear();
-  const count = await prisma.user.count({
-    where: {
-      role: "STUDENT",
-      schoolId: school?.id,
-    },
-  });
-  const studentId = `STU-${year}-${String(count + 1).padStart(5, "0")}`;
+    // Check email unique (if provided)
+    if (email) {
+      const emailExists = await queryWithRetry(() =>
+        prisma.user.findUnique({ where: { email } }),
+      );
 
-  const student = await prisma.$transaction(async (tx) => {
-    const updateSchool = await tx.school.update({
-      where: { id: school?.id },
-      data: {
-        studentCounter: { increment: 1 },
-      },
-      select: { studentCounter: true, name: true },
-    });
+      if (emailExists) {
+        throw new AppError("Email already in use", 409);
+      }
+    }
 
-    const schoolCode = makePrefix(updateSchool.name, 3);
-    const classCode = makePrefix(classExists.name, 3);
-    const serial = String(updateSchool.studentCounter).padStart(5, "0");
-
-    const studentId = `${schoolCode}/${classCode}/${serial}`;
-
-    const newStudent = await tx.user.create({
-      data: {
-        name: name.trim().toLowerCase(),
-        email: email || null,
-        studentId,
+    // Generate unique student ID
+    const year = new Date().getFullYear();
+    const count = await prisma.user.count({
+      where: {
         role: "STUDENT",
         schoolId: school?.id,
-        classId,
-        armId: armId || null,
-        profilePicture: profilePictureUrl,
-        dateOfBirth: dateOfBirth || null,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        studentId: true,
-        profilePicture: true,
-        class: { select: { id: true, name: true } },
-        arm: { select: { id: true, name: true } },
       },
     });
-    return newStudent;
-  });
+    const studentId = `STU-${year}-${String(count + 1).padStart(5, "0")}`;
 
-  res.status(201).json({
-    success: true,
-    message: "Student created successfully",
-    student,
-  });
-};
+    const student = await prisma.$transaction(async (tx) => {
+      const updateSchool = await tx.school.update({
+        where: { id: school?.id },
+        data: {
+          studentCounter: { increment: 1 },
+        },
+        select: { studentCounter: true, name: true },
+      });
 
-export const getStudents = async (req: Request, res: Response) => {
+      const schoolCode = makePrefix(updateSchool.name, 3);
+      const classCode = makePrefix(classExists.name, 3);
+      const serial = String(updateSchool.studentCounter).padStart(5, "0");
+
+      const studentId = `${schoolCode}/${classCode}/${serial}`;
+
+      const newStudent = await tx.user.create({
+        data: {
+          name: name.trim().toLowerCase(),
+          email: email || null,
+          studentId,
+          role: "STUDENT",
+          schoolId: school?.id,
+          classId,
+          armId: armId || null,
+          profilePicture: profilePictureUrl,
+          dateOfBirth: dateOfBirth || null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          studentId: true,
+          profilePicture: true,
+          class: { select: { id: true, name: true } },
+          arm: { select: { id: true, name: true } },
+        },
+      });
+      return newStudent;
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Student created successfully",
+      student,
+    });
+  },
+);
+
+export const getStudents = asyncHandler(async (req: Request, res: Response) => {
   const { classId, armId, search, page = "1", limit = "10" } = req.query;
 
   const school = req.school;
@@ -193,4 +196,4 @@ export const getStudents = async (req: Request, res: Response) => {
       hasPreviousPage: pageNumber > 1,
     },
   });
-};
+});
