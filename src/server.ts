@@ -39,7 +39,7 @@ app.use(
             "https://admin.tlearn.africa",
             "https://*.tlearn.africa", // Wildcard for schools
             // "https://tlearn-ten.vercel.app",
-            // "https://muwaaf.tlearn.africa",
+            "https://muwaaf.tlearn.africa",
           ]
         : [
             "http://localhost:8080",
