@@ -91,8 +91,7 @@ export const attachSchoolContext = asyncHandler(
     if (!subdomain) {
       throw new AppError("School subdomain is required", 400);
     }
-
-    if (!/^[a-z]+$/.test(subdomain)) {
+    if (!/^[a-z0-9-]+$/.test(subdomain)) {
       throw new AppError("Invalid school format", 400);
     }
 
