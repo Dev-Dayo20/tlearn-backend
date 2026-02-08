@@ -76,7 +76,7 @@ app.use("/tlearn", mainRouter);
 // Root route
 app.get("/", (req: Request, res: Response) => {
   res.json({
-    message: "tLearn Backend is running!",
+    message: "tLearn Backend is running!!",
     version: "1.0.0",
     environment: process.env.NODE_ENV || "development",
   });
