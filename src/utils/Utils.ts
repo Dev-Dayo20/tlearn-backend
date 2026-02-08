@@ -42,7 +42,7 @@ export async function queryWithRetry<T>(
 function getSecretKey(): string {
   const secret = process.env.SECRET_KEY;
   if (!secret) {
-    throw new Error("SECRET_KEY is not defined in environment variables");
+    throw new Error(" Not defined in environment variables");
   }
   return secret;
 }
@@ -51,9 +51,7 @@ function getSecretKey(): string {
 function getRefreshKey(): string {
   const secret = process.env.REFRESH_SECRET_KEY;
   if (!secret) {
-    throw new Error(
-      "REFRESH_SECRET_KEY is not defined in environment variables",
-    );
+    throw new Error("Not defined in environment variables");
   }
   return secret;
 }
@@ -74,20 +72,27 @@ export function generateSchoolUserRefreshToken(
   });
 }
 
-export function verifyRefreshToken(token: string): SchoolUsersPayload {
+export function verifyRefreshToken(token: string): any {
   try {
-    return jwt.verify(token, getRefreshKey()) as SchoolUsersPayload;
+    return jwt.verify(token, getRefreshKey());
   } catch (error) {
     throw new AppError("Invalid or expired token", 401);
   }
 }
 
+// export function generateRefreshToken(payload: AUthPayload): string {
+//   return jwt.sign(payload, getRefreshKey(), {
+//     algorithm: "HS256",
+//     expiresIn: "7d",
+//   });
+// }
+
 // FUNCTION TO GENERATE TOKEN
-export function generateToken(payload: AUthPayload): string {
-  return jwt.sign(payload, getSecretKey(), {
-    expiresIn: "30m",
-  });
-}
+// export function generateToken(payload: AUthPayload): string {
+//   return jwt.sign(payload, getSecretKey(), {
+//     expiresIn: "30m",
+//   });
+// }
 
 // HELPER FUNCTION TO VERIFY TOKEN
 export function verifyToken(token: string): AUthPayload {

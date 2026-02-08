@@ -4,6 +4,7 @@ import { AUthPayload } from "../utils/types";
 import { queryWithRetry } from "../utils/Utils";
 import { AppError } from "../utils/AppError";
 import { Role } from "@prisma/client";
+import { asyncHandler } from "../utils/asyncHandler";
 
 // Extend Express Request type
 declare global {
@@ -90,32 +91,26 @@ export const detectSubdomain = async (
   next();
 };
 
-export const requireSchAdmin = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const allowedRoles = [Role.ADMIN, Role.SUPER_ADMIN];
+export const requireSchAdmin = asyncHandler(
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      throw new AppError("Authentication required", 401);
+    }
 
-  if (!req.school) {
-    throw new AppError("School context required", 400);
-  }
+    if (req.user.role !== Role.ADMIN && req.user.role !== Role.SUPER_ADMIN) {
+      throw new AppError("Admin access required", 403);
+    }
 
-  if (!req.user) {
-    throw new AppError("Authentication required", 401);
-  }
+    if (req.school && req.user.schoolId !== req.school.id) {
+      throw new AppError(
+        "Access denied. You don't belong to this school.",
+        403,
+      );
+    }
 
-  if (req.user.role !== Role.ADMIN && req.user.role !== Role.SUPER_ADMIN) {
-    throw new AppError("Admin access required", 403);
-  }
-
-  // Check if user's school matches the subdomain school
-  if (req.user.schoolId !== req.school.id) {
-    throw new AppError("Access denied. You don't belong to this school.", 403);
-  }
-
-  next();
-};
+    next();
+  },
+);
 
 export const requiredSuperAdmin = (
   req: Request,

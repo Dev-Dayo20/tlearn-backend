@@ -1,10 +1,6 @@
 import { Router } from "express";
 import { getSchoolFromDomain } from "../../controllers/sch_admin/gerSchoolFromDomain";
-import {
-  SchoolUsersLogin,
-  refreshAccessToken,
-  logout,
-} from "../../controllers/sch_admin/schoolAutth";
+import { SchoolUsersLogin } from "../../controllers/sch_admin/schoolAutth";
 import { createClass } from "../../controllers/sch_admin/createClass";
 import { getClasses } from "../../controllers/sch_admin/getClasses";
 import { getClassDetails } from "../../controllers/sch_admin/getClasses";
@@ -25,10 +21,11 @@ import { getDashboardStats } from "../../controllers/sch_admin/dashboard";
 import { classes } from "../../controllers/sch_admin/createClass";
 
 // ========== MIDDLEWARES ==========
-import { authenticate } from "../../middlewares/auth";
 import { authSchoolUsersLogin } from "../../middlewares/loginMiddleware";
 import { requireSchAdmin } from "../../middlewares/requiredAccess";
 import { upload, uploadVideo } from "../../middlewares/upload";
+import { newAuthenticate } from "../../middlewares/auth";
+import { attachSchoolContext } from "../../middlewares/loginMiddleware";
 
 const router = Router();
 
@@ -36,74 +33,36 @@ const router = Router();
 router.get("/school/:subdomain", getSchoolFromDomain);
 
 // ========== SCHOOL USERS LOGIN ==========
-router.post("/login", authSchoolUsersLogin, SchoolUsersLogin);
+router.post("/login", SchoolUsersLogin);
 
 // ========= SCHOOL ADMIN CREATE CLASS =========
-router.post("/class", authenticate, authSchoolUsersLogin, createClass);
+router.post("/class", newAuthenticate, createClass);
 
 //======== SCHOOLADMIN FETCH CLASSES ===========
-router.get(
-  "/classes/list",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  classes,
-);
+router.get("/classes/list", newAuthenticate, requireSchAdmin, classes);
 
-router.get(
-  "/classes",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  getClasses,
-);
-router.get(
-  "/classes/:id",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  getClassDetails,
-);
+router.get("/classes", newAuthenticate, requireSchAdmin, getClasses);
+router.get("/classes/:id", newAuthenticate, requireSchAdmin, getClassDetails);
 
 //========= SCHOOL ADMIN TEACHER ==========
-router.post(
-  "/teacher",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  createTeacher,
-);
+router.post("/teacher", newAuthenticate, requireSchAdmin, createTeacher);
 
-router.get(
-  "/teachers",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  getTeachers,
-);
+router.get("/teachers", newAuthenticate, requireSchAdmin, getTeachers);
 
 // ========== SCHOOL ADMIN STUDENTS ==========
 router.post(
   "/register/students",
-  authenticate,
-  authSchoolUsersLogin,
+  newAuthenticate,
   requireSchAdmin,
   upload.single("profilePicture"),
   createStudents,
 );
 
-router.get(
-  "/students",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  getStudents,
-);
+router.get("/students", newAuthenticate, requireSchAdmin, getStudents);
 
 router.get(
   "/students/:id/analytics",
-  authenticate,
-  authSchoolUsersLogin,
+  newAuthenticate,
   requireSchAdmin,
   getStudentAnalytics,
 );
@@ -111,32 +70,23 @@ router.get(
 // ========== SCHOOL ADMIN MATERIALS ==========
 router.post(
   "/materials/create",
-  authenticate,
-  authSchoolUsersLogin,
+  newAuthenticate,
   requireSchAdmin,
   uploadVideo.single("video"),
   createMaterial,
 );
-router.get(
-  "/materials",
-  authenticate,
-  authSchoolUsersLogin,
-  requireSchAdmin,
-  getMaterials,
-);
+router.get("/materials", newAuthenticate, requireSchAdmin, getMaterials);
 
 router.patch(
   "/materials/:id",
-  authenticate,
-  authSchoolUsersLogin,
+  newAuthenticate,
   requireSchAdmin,
   updateMaterial,
 );
 
 router.delete(
   "/materials/:id",
-  authenticate,
-  authSchoolUsersLogin,
+  newAuthenticate,
   requireSchAdmin,
   deleteMaterial,
 );
@@ -144,8 +94,7 @@ router.delete(
 // ========== SCHOOL ADMIN DASHBOARD ==========
 router.get(
   "/dashboard/stats",
-  authenticate,
-  authSchoolUsersLogin,
+  newAuthenticate,
   requireSchAdmin,
   getDashboardStats,
 );

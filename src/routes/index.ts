@@ -6,13 +6,14 @@ import {
   refreshAccessToken,
   logout,
 } from "../controllers/sch_admin/schoolAutth";
+import { attachSchoolContext } from "../middlewares/loginMiddleware";
 
 const router = Router();
 router.post("/refresh-token", refreshAccessToken);
 router.post("/logout", logout);
 
 // Mounting the sub-routers
-router.use("/sch-admin", schAdminRoutes);
+router.use("/sch-admin", attachSchoolContext, schAdminRoutes);
 router.use("/student", studentRoutes);
 router.use("/super-admin", superAdminRoutes);
 

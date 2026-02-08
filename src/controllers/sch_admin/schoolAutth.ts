@@ -112,28 +112,36 @@ export const SchoolUsersLogin = asyncHandler(
       role: user.role,
       schoolId: user.schoolId,
     };
-    const token = generateSchoolUserToken(payload);
 
-    const refreshTokenPayload = {
-      id: user.id,
-      role: user.role,
-      schoolId: user.schoolId,
+    const accessToken = generateSchoolUserToken(payload);
+    const refreshToken = generateSchoolUserRefreshToken(payload);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("lax" as const)
+          : ("none" as const),
+      domain:
+        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+      path: "/",
     };
-    const refreshToken = generateSchoolUserRefreshToken(refreshTokenPayload);
+
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 30 * 60 * 1000,
+    });
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      domain:
-        process.env.NODE_ENV === "production" ? ".tlearn.africa" : undefined,
-      path: "/",
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
     res.status(200).json({
       success: true,
       message: "Login successful.",
-      accessToken: token,
+      // accessToken: token,
       user,
     });
   },
@@ -153,7 +161,7 @@ export const refreshAccessToken = asyncHandler(
       prisma.user.findFirst({
         where: {
           id: decoded.id,
-          schoolId: decoded.schoolId,
+          ...(decoded.schoolId && { schoolId: decoded.schoolId }),
           isActive: true,
         },
         select: {
@@ -168,29 +176,64 @@ export const refreshAccessToken = asyncHandler(
       throw new AppError("User not found", 404);
     }
 
-    if (!user.schoolId) {
-      throw new AppError(
-        "Internal Error: User missing school association",
-        500,
-      );
+    const payload: SchoolUsersPayload = {
+      id: user.id,
+      role: user.role,
+    };
+
+    if (user.schoolId) {
+      payload.schoolId = user.schoolId;
     }
 
     // Generate new access token
-    const newAccessToken = generateSchoolUserToken({
-      id: user.id,
-      role: user.role,
-      schoolId: user.schoolId,
+    const newAccessToken = generateSchoolUserToken(payload);
+
+    // Set new access token in cookie
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("lax" as const)
+          : ("none" as const),
+      domain:
+        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+      path: "/",
+      maxAge: 30 * 60 * 1000,
     });
 
     res.json({
       success: true,
-      accessToken: newAccessToken,
+      message: "Token refreshed successfully",
+      // accessToken: newAccessToken,
     });
   },
 );
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  res.clearCookie("refreshToken");
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite:
+      process.env.NODE_ENV === "production"
+        ? ("lax" as const)
+        : ("none" as const),
+    domain:
+      process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+    path: "/",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite:
+      process.env.NODE_ENV === "production"
+        ? ("lax" as const)
+        : ("none" as const),
+    domain:
+      process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+    path: "/",
+  });
 
   res.json({
     success: true,

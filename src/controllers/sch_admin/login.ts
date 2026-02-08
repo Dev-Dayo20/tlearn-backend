@@ -1,13 +1,15 @@
-import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { isEmailValid } from "../../utils/Utils";
+import {
+  isEmailValid,
+  queryWithRetry,
+  generateSchoolUserToken,
+  generateSchoolUserRefreshToken,
+} from "../../utils/Utils";
 import { prisma } from "../../utils/prismaClient";
-import { AUthPayload } from "../../utils/types";
+import { SchoolUsersPayload } from "../../utils/types";
 import { AppError } from "../../utils/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
-
-const secretKey = process.env.SECRET_KEY;
 
 const superAdminLogin = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -42,24 +44,125 @@ const superAdminLogin = asyncHandler(
       throw new AppError("Invalid credentials.", 401);
     }
 
-    const payload: AUthPayload = {
+    const payload: SchoolUsersPayload = {
       id: admin.id,
       email: admin.email ?? undefined,
       role: admin.role,
     };
 
-    const token = jwt.sign(payload, secretKey as string, {
-      expiresIn: "30m",
+    const accessToken = generateSchoolUserToken(payload);
+    const refreshToken = generateSchoolUserRefreshToken(payload);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("lax" as const)
+          : ("none" as const),
+      domain:
+        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+      path: "/",
+    };
+
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 30 * 60 * 1000,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
       success: true,
       message: "Login successful.",
-      token,
       admin: payload,
       adminName: admin.name,
     });
   },
 );
 
-export { superAdminLogin };
+// const refreshSuperAdminToken = asyncHandler(
+//   async (req: Request, res: Response) => {
+//     const refreshToken = req.cookies.refreshToken;
+
+//     if (!refreshToken) {
+//       throw new AppError("Refresh token required", 401);
+//     }
+
+//     const decoded = verifyRefreshToken(refreshToken) as AUthPayload;
+
+//     const admin = await queryWithRetry(() =>
+//       prisma.user.findFirst({
+//         where: {
+//           id: decoded.id,
+//           role: "SUPER_ADMIN",
+//           isActive: true,
+//         },
+//         select: {
+//           id: true,
+//           email: true,
+//           role: true,
+//         },
+//       }),
+//     );
+
+//     if (!admin) {
+//       throw new AppError("Admin not found", 404);
+//     }
+
+//     const newAccessToken = generateToken({
+//       id: admin.id,
+//       email: admin.email ?? undefined,
+//       role: admin.role,
+//     });
+
+//     const cookieOptions = {
+//       httpOnly: true,
+//       secure: true,
+//       sameSite:
+//         process.env.NODE_ENV === "production"
+//           ? ("lax" as const)
+//           : ("none" as const),
+//       domain:
+//         process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+//       path: "/",
+//     };
+
+//     res.cookie("accessToken", newAccessToken, {
+//       ...cookieOptions,
+//       maxAge: 30 * 60 * 1000,
+//     });
+
+//     res.json({
+//       success: true,
+//       message: "Token refreshed successfully",
+//     });
+//   },
+// );
+
+const superAdminLogout = asyncHandler(async (req: Request, res: Response) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite:
+      process.env.NODE_ENV === "production"
+        ? ("lax" as const)
+        : ("none" as const),
+    domain:
+      process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
+    path: "/",
+  };
+
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
+
+  res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
+});
+
+export { superAdminLogin, superAdminLogout };

@@ -10,8 +10,10 @@ export interface AUthPayload {
 
 export interface SchoolUsersPayload {
   id: number;
+  email?: string;
   role: string;
-  schoolId: number;
+  schoolId?: number;
+  subdomain?: string;
   exp?: number;
   iat?: number;
 }

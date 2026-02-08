@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginSuperAdmin } from "../../controllers/super_admin/superAdminAuth";
+import { superAdminLogin } from "../../controllers/sch_admin/login";
 import { loginLimiter } from "../../middlewares/rateLimiter";
 import {
   createSchoolWithAdmin,
@@ -7,7 +7,7 @@ import {
   toggleSchoolStatus,
   deleteSchool,
 } from "../../controllers/super_admin/createSchool";
-import { authenticate } from "../../middlewares/auth";
+import { newAuthenticate } from "../../middlewares/auth";
 import { requiredSuperAdmin } from "../../middlewares/requiredAccess";
 import {
   getDashboardMetrics,
@@ -31,66 +31,71 @@ import { upload } from "../../middlewares/upload";
 const router = Router();
 
 // ========== SUPER ADMIN LOGIN ==========
-router.post("/login", validate, validateLogin, loginLimiter, loginSuperAdmin);
+router.post("/login", validate, validateLogin, loginLimiter, superAdminLogin);
 
 // ========== SUPER ADMIN SCHOOLS ==========
 router.post(
   "/create-school",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
   upload.single("logo"),
   validateCreateSchool,
   validate,
-  createSchoolWithAdmin
+  createSchoolWithAdmin,
 );
 
-router.get("/schools", authenticate, requiredSuperAdmin, getAllSchools);
+router.get("/schools", newAuthenticate, requiredSuperAdmin, getAllSchools);
 router.get(
   "/dashboard/metrics",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
-  getDashboardMetrics
+  getDashboardMetrics,
 );
 router.get(
   "/dashboard/chart-data",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
-  getChartData
+  getChartData,
 );
 router.get(
   "/dashboard/recent-activities",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
-  getRecentActivities
+  getRecentActivities,
 );
 router.patch(
   "/schools/:schoolId/status",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
-  toggleSchoolStatus
+  toggleSchoolStatus,
 );
 router.delete(
   "/schools/:schoolId",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
-  deleteSchool
+  deleteSchool,
 );
 
 // ========== SUPER ADMIN USERS  ==========
-router.get("/users/metrics", authenticate, requiredSuperAdmin, getUsersMetrics);
+router.get(
+  "/users/metrics",
+  newAuthenticate,
+  requiredSuperAdmin,
+  getUsersMetrics,
+);
 router.get(
   "/users",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
   userPagination,
   stripUnknownQueries,
-  getAllusers
+  getAllusers,
 );
 router.patch(
   "/users/:userId/status",
-  authenticate,
+  newAuthenticate,
   requiredSuperAdmin,
-  userStatus
+  userStatus,
 );
 
 export default router;

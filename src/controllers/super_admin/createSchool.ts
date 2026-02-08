@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../utils/prismaClient";
-import { queryWithRetry } from "../../utils/Utils";
-import { generateToken } from "../../utils/Utils";
+import { generateSchoolUserToken, queryWithRetry } from "../../utils/Utils";
 import { Role } from "@prisma/client";
 import { createSchoolPayload } from "../../utils/types";
 import { uploadToCloudinary } from "../../utils/uploadImage";
@@ -86,7 +85,7 @@ export const createSchoolWithAdmin = asyncHandler(
       }),
     );
 
-    const token = generateToken({
+    const token = generateSchoolUserToken({
       id: result.schoolAdmin.id,
       email: result.schoolAdmin.email ?? undefined,
       role: result.schoolAdmin.role,

@@ -38,3 +38,28 @@ export const authenticate = asyncHandler(
     next();
   },
 );
+
+export const newAuthenticate = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.cookies.accessToken;
+
+    if (!token) {
+      throw new AppError("No token provided", 401);
+    }
+
+    const decoded = decodeToken(token);
+
+    if (!decoded) {
+      throw new AppError("Invalid token", 401);
+    }
+
+    if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+      throw new AppError("Session expired. Please login again", 401);
+    }
+
+    verifyToken(token);
+
+    req.user = decoded;
+    next();
+  },
+);
