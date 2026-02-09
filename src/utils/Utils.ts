@@ -54,7 +54,7 @@ export function getCookieOptions() {
   return {
     httpOnly: true,
     secure: true, // Always true for SameSite: None
-    sameSite: "none" as const, // For cross-subdomain compatibility
+    sameSite: "lax" as const, // For cross-subdomain compatibility
     domain: isProduction ? undefined : ".localhost",
     path: "/",
   };
