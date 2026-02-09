@@ -55,7 +55,7 @@ export function getCookieOptions() {
     httpOnly: true,
     secure: true, // Always true for SameSite: None
     sameSite: "lax" as const, // For cross-subdomain compatibility
-    domain: isProduction ? undefined : ".localhost",
+    domain: ".tlearn.africa",
     path: "/",
   };
 }
