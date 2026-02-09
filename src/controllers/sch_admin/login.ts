@@ -67,6 +67,8 @@ const superAdminLogin = asyncHandler(
     });
 
     console.log("✅ Cookies set with options:", cookieOptions); // Debug log
+    console.log("📦 Response headers:", res.getHeaders()); // Add this
+    console.log("🍪 Set-Cookie header:", res.getHeaders()["set-cookie"]); // Add this
 
     res.status(200).json({
       success: true,

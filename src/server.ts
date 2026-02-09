@@ -11,26 +11,6 @@ import { errorHandler } from "./middlewares/errorHandler";
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles (for some UI libraries)
-        imgSrc: ["'self'", "data:", "https:"], // Allow images from https and data URIs
-        connectSrc: ["'self'"], // Allow API calls to same origin
-        fontSrc: ["'self'", "data:"], // Allow fonts
-        objectSrc: ["'none'"], // Block plugins
-        mediaSrc: ["'self'"], // Allow media from same origin
-        frameSrc: ["'none'"],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources
-    crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Allow cross-origin openers
-  }),
-);
 app.set("trust proxy", 1);
 
 app.use(
@@ -71,6 +51,28 @@ app.use(
     exposedHeaders: ["Set-Cookie"],
   }),
 );
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles (for some UI libraries)
+        imgSrc: ["'self'", "data:", "https:"], // Allow images from https and data URIs
+        connectSrc: ["'self'"], // Allow API calls to same origin
+        fontSrc: ["'self'", "data:"], // Allow fonts
+        objectSrc: ["'none'"], // Block plugins
+        mediaSrc: ["'self'"], // Allow media from same origin
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources
+    crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Allow cross-origin openers
+  }),
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
