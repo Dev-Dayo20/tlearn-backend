@@ -67,11 +67,6 @@ const superAdminLogin = asyncHandler(
     });
 
     console.log("✅ Cookies set with options:", cookieOptions); // Debug log
-    res.cookie("accessToken", accessToken, cookieOptions);
-    res.cookie("refreshToken", refreshToken, cookieOptions);
-
-    // Debug: Check what headers Express actually set
-    console.log("📦 Response headers being sent:", res.getHeaders());
 
     res.status(200).json({
       success: true,
