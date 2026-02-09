@@ -27,6 +27,8 @@ app.use(
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow cross-origin resources
+    crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Allow cross-origin openers
   }),
 );
 app.set("trust proxy", 1);
