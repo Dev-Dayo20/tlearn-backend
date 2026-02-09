@@ -8,6 +8,7 @@ import {
   generateSchoolUserToken,
   generateSchoolUserRefreshToken,
   verifyRefreshToken,
+  getCookieOptions,
 } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -116,17 +117,7 @@ export const SchoolUsersLogin = asyncHandler(
     const accessToken = generateSchoolUserToken(payload);
     const refreshToken = generateSchoolUserRefreshToken(payload);
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite:
-        process.env.NODE_ENV === "production"
-          ? ("lax" as const)
-          : ("none" as const),
-      domain:
-        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
-      path: "/",
-    };
+    const cookieOptions = getCookieOptions();
 
     res.cookie("accessToken", accessToken, {
       ...cookieOptions,
@@ -189,17 +180,7 @@ export const refreshAccessToken = asyncHandler(
     const newAccessToken = generateSchoolUserToken(payload);
 
     // Set new access token in cookie
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite:
-        process.env.NODE_ENV === "production"
-          ? ("lax" as const)
-          : ("none" as const),
-      domain:
-        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
-      path: "/",
-    };
+    const cookieOptions = getCookieOptions();
 
     res.cookie("accessToken", newAccessToken, {
       ...cookieOptions,
@@ -214,17 +195,7 @@ export const refreshAccessToken = asyncHandler(
 );
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: true,
-    sameSite:
-      process.env.NODE_ENV === "production"
-        ? ("lax" as const)
-        : ("none" as const),
-    domain:
-      process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
-    path: "/",
-  };
+  const cookieOptions = getCookieOptions();
 
   res.clearCookie("accessToken", cookieOptions);
   res.clearCookie("refreshToken", cookieOptions);

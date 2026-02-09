@@ -5,6 +5,7 @@ import {
   queryWithRetry,
   generateSchoolUserToken,
   generateSchoolUserRefreshToken,
+  getCookieOptions,
 } from "../../utils/Utils";
 import { prisma } from "../../utils/prismaClient";
 import { SchoolUsersPayload } from "../../utils/types";
@@ -53,17 +54,7 @@ const superAdminLogin = asyncHandler(
     const accessToken = generateSchoolUserToken(payload);
     const refreshToken = generateSchoolUserRefreshToken(payload);
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite:
-        process.env.NODE_ENV === "production"
-          ? ("lax" as const)
-          : ("none" as const),
-      domain:
-        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
-      path: "/",
-    };
+    const cookieOptions = getCookieOptions();
 
     res.cookie("accessToken", accessToken, {
       ...cookieOptions,
@@ -78,7 +69,11 @@ const superAdminLogin = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Login successful.",
-      admin: payload,
+      admin: payload, // Backward compatibility
+      user: {
+        ...payload,
+        name: admin.name,
+      }, // Standardized key
       adminName: admin.name,
     });
   },
@@ -144,17 +139,7 @@ const superAdminLogin = asyncHandler(
 // );
 
 const superAdminLogout = asyncHandler(async (req: Request, res: Response) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: true,
-    sameSite:
-      process.env.NODE_ENV === "production"
-        ? ("lax" as const)
-        : ("none" as const),
-    domain:
-      process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
-    path: "/",
-  };
+  const cookieOptions = getCookieOptions();
 
   res.clearCookie("accessToken", cookieOptions);
   res.clearCookie("refreshToken", cookieOptions);

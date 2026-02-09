@@ -47,6 +47,19 @@ function getSecretKey(): string {
   return secret;
 }
 
+// FUNCTION TO GET COOKIE OPTIONS
+export function getCookieOptions() {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: true,
+    secure: true, // Always true for SameSite: None
+    sameSite: "none" as const, // For cross-subdomain compatibility
+    domain: isProduction ? ".tlearn.africa" : ".localhost",
+    path: "/",
+  };
+}
+
 //FUNCTION TO GENERATE REFRESH SECRET KEY
 function getRefreshKey(): string {
   const secret = process.env.REFRESH_SECRET_KEY;
