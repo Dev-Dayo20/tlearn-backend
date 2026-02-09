@@ -29,6 +29,7 @@ app.use(
     crossOriginEmbedderPolicy: false,
   }),
 );
+app.set("trust proxy", 1);
 
 app.use(
   cors({

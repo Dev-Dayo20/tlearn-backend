@@ -66,6 +66,8 @@ const superAdminLogin = asyncHandler(
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    console.log("✅ Cookies set with options:", cookieOptions); // Debug log
+
     res.status(200).json({
       success: true,
       message: "Login successful.",
