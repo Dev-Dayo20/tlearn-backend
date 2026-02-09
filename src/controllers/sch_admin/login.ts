@@ -56,8 +56,12 @@ const superAdminLogin = asyncHandler(
     const cookieOptions = {
       httpOnly: true,
       secure: true,
-      sameSite: "lax" as const,
-      domain: ".tlearn.africa",
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("lax" as const)
+          : ("none" as const),
+      domain:
+        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
       path: "/",
     };
 

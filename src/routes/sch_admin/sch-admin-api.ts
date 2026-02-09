@@ -21,7 +21,6 @@ import { getDashboardStats } from "../../controllers/sch_admin/dashboard";
 import { classes } from "../../controllers/sch_admin/createClass";
 
 // ========== MIDDLEWARES ==========
-import { authSchoolUsersLogin } from "../../middlewares/loginMiddleware";
 import { requireSchAdmin } from "../../middlewares/requiredAccess";
 import { upload, uploadVideo } from "../../middlewares/upload";
 import { newAuthenticate } from "../../middlewares/auth";
@@ -33,36 +32,73 @@ const router = Router();
 router.get("/school/:subdomain", getSchoolFromDomain);
 
 // ========== SCHOOL USERS LOGIN ==========
-router.post("/login", SchoolUsersLogin);
+router.post("/login", attachSchoolContext, SchoolUsersLogin);
 
-// ========= SCHOOL ADMIN CREATE CLASS =========
-router.post("/class", newAuthenticate, createClass);
+//======== SCHOOLADMIN CLASSES ===========
+router.post("/class", newAuthenticate, attachSchoolContext, createClass);
 
-//======== SCHOOLADMIN FETCH CLASSES ===========
-router.get("/classes/list", newAuthenticate, requireSchAdmin, classes);
+router.get(
+  "/classes/list",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  classes,
+);
 
-router.get("/classes", newAuthenticate, requireSchAdmin, getClasses);
-router.get("/classes/:id", newAuthenticate, requireSchAdmin, getClassDetails);
+router.get(
+  "/classes",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  getClasses,
+);
+router.get(
+  "/classes/:id",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  getClassDetails,
+);
 
 //========= SCHOOL ADMIN TEACHER ==========
-router.post("/teacher", newAuthenticate, requireSchAdmin, createTeacher);
+router.post(
+  "/teacher",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  createTeacher,
+);
 
-router.get("/teachers", newAuthenticate, requireSchAdmin, getTeachers);
+router.get(
+  "/teachers",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  getTeachers,
+);
 
 // ========== SCHOOL ADMIN STUDENTS ==========
 router.post(
   "/register/students",
   newAuthenticate,
+  attachSchoolContext,
   requireSchAdmin,
   upload.single("profilePicture"),
   createStudents,
 );
 
-router.get("/students", newAuthenticate, requireSchAdmin, getStudents);
+router.get(
+  "/students",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  getStudents,
+);
 
 router.get(
   "/students/:id/analytics",
   newAuthenticate,
+  attachSchoolContext,
   requireSchAdmin,
   getStudentAnalytics,
 );
@@ -71,15 +107,23 @@ router.get(
 router.post(
   "/materials/create",
   newAuthenticate,
+  attachSchoolContext,
   requireSchAdmin,
   uploadVideo.single("video"),
   createMaterial,
 );
-router.get("/materials", newAuthenticate, requireSchAdmin, getMaterials);
+router.get(
+  "/materials",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  getMaterials,
+);
 
 router.patch(
   "/materials/:id",
   newAuthenticate,
+  attachSchoolContext,
   requireSchAdmin,
   updateMaterial,
 );
@@ -87,6 +131,7 @@ router.patch(
 router.delete(
   "/materials/:id",
   newAuthenticate,
+  attachSchoolContext,
   requireSchAdmin,
   deleteMaterial,
 );
@@ -95,7 +140,9 @@ router.delete(
 router.get(
   "/dashboard/stats",
   newAuthenticate,
+  attachSchoolContext,
   requireSchAdmin,
   getDashboardStats,
 );
+
 export default router;

@@ -189,12 +189,20 @@ export const refreshAccessToken = asyncHandler(
     const newAccessToken = generateSchoolUserToken(payload);
 
     // Set new access token in cookie
-    res.cookie("accessToken", newAccessToken, {
+    const cookieOptions = {
       httpOnly: true,
       secure: true,
-      sameSite: "lax" as const,
-      domain: ".tlearn.africa",
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("lax" as const)
+          : ("none" as const),
+      domain:
+        process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
       path: "/",
+    };
+
+    res.cookie("accessToken", newAccessToken, {
+      ...cookieOptions,
       maxAge: 30 * 60 * 1000,
     });
 
@@ -206,21 +214,20 @@ export const refreshAccessToken = asyncHandler(
 );
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  res.clearCookie("accessToken", {
+  const cookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: "lax" as const,
-    domain: ".tlearn.africa",
+    sameSite:
+      process.env.NODE_ENV === "production"
+        ? ("lax" as const)
+        : ("none" as const),
+    domain:
+      process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
     path: "/",
-  });
+  };
 
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax" as const,
-    domain: ".tlearn.africa",
-    path: "/",
-  });
+  res.clearCookie("accessToken", cookieOptions);
+  res.clearCookie("refreshToken", cookieOptions);
 
   res.json({
     success: true,
