@@ -101,6 +101,13 @@ export const requireSchAdmin = asyncHandler(
       throw new AppError("Admin access required", 403);
     }
 
+    // 🔍 Debug logging
+    console.log("🔍 Debug Info:");
+    console.log("User schoolId:", req.user.schoolId);
+    console.log("School ID from subdomain:", req.school?.id);
+    console.log("School object:", req.school);
+    console.log("User object:", req.user);
+
     if (req.school && req.user.schoolId !== req.school.id) {
       throw new AppError(
         "Access denied. You don't belong to this school.",

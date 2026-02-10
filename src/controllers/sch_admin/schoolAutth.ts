@@ -187,8 +187,6 @@ export const refreshAccessToken = asyncHandler(
       maxAge: 30 * 60 * 1000,
     });
 
-    console.log("✅ Cookies set with options:", cookieOptions); // Debug log
-
     res.json({
       success: true,
       message: "Token refreshed successfully",
