@@ -53,8 +53,9 @@ export function getCookieOptions() {
 
   return {
     httpOnly: true,
-    secure: true, // Always true for SameSite: None
-    sameSite: "none" as const, // For cross-subdomain compatibility
+    secure: true,
+    sameSite: "lax" as const, // Changed from "none"
+    domain: ".tlearn.africa", // Added back
     path: "/",
   };
 }
@@ -91,20 +92,6 @@ export function verifyRefreshToken(token: string): any {
     throw new AppError("Invalid or expired token", 401);
   }
 }
-
-// export function generateRefreshToken(payload: AUthPayload): string {
-//   return jwt.sign(payload, getRefreshKey(), {
-//     algorithm: "HS256",
-//     expiresIn: "7d",
-//   });
-// }
-
-// FUNCTION TO GENERATE TOKEN
-// export function generateToken(payload: AUthPayload): string {
-//   return jwt.sign(payload, getSecretKey(), {
-//     expiresIn: "30m",
-//   });
-// }
 
 // HELPER FUNCTION TO VERIFY TOKEN
 export function verifyToken(token: string): AUthPayload {

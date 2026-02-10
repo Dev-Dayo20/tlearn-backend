@@ -24,10 +24,18 @@ const superAdminLogin = asyncHandler(
       throw new AppError("Invalid email format.", 400);
     }
 
-    const admin = await prisma.user.findUnique({
-      where: { email: email },
-      select: { id: true, email: true, password: true, role: true, name: true },
-    });
+    const admin = await queryWithRetry(() =>
+      prisma.user.findUnique({
+        where: { email: email },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          role: true,
+          name: true,
+        },
+      }),
+    );
     if (!admin || admin.role !== "SUPER_ADMIN") {
       throw new AppError("Unauthorized access.", 401);
     }
@@ -66,81 +74,22 @@ const superAdminLogin = asyncHandler(
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    console.log("✅ Cookies set with options:", cookieOptions); // Debug log
-    console.log("📦 Response headers:", res.getHeaders()); // Add this
-    console.log("🍪 Set-Cookie header:", res.getHeaders()["set-cookie"]); // Add this
+    console.log("✅ Cookies set with options:", cookieOptions);
+    console.log("📦 Response headers:", res.getHeaders());
+    console.log("🍪 Set-Cookie header:", res.getHeaders()["set-cookie"]);
 
     res.status(200).json({
       success: true,
       message: "Login successful.",
-      admin: payload, // Backward compatibility
+      admin: payload,
       user: {
         ...payload,
         name: admin.name,
-      }, // Standardized key
+      },
       adminName: admin.name,
     });
   },
 );
-
-// const refreshSuperAdminToken = asyncHandler(
-//   async (req: Request, res: Response) => {
-//     const refreshToken = req.cookies.refreshToken;
-
-//     if (!refreshToken) {
-//       throw new AppError("Refresh token required", 401);
-//     }
-
-//     const decoded = verifyRefreshToken(refreshToken) as AUthPayload;
-
-//     const admin = await queryWithRetry(() =>
-//       prisma.user.findFirst({
-//         where: {
-//           id: decoded.id,
-//           role: "SUPER_ADMIN",
-//           isActive: true,
-//         },
-//         select: {
-//           id: true,
-//           email: true,
-//           role: true,
-//         },
-//       }),
-//     );
-
-//     if (!admin) {
-//       throw new AppError("Admin not found", 404);
-//     }
-
-//     const newAccessToken = generateToken({
-//       id: admin.id,
-//       email: admin.email ?? undefined,
-//       role: admin.role,
-//     });
-
-//     const cookieOptions = {
-//       httpOnly: true,
-//       secure: true,
-//       sameSite:
-//         process.env.NODE_ENV === "production"
-//           ? ("lax" as const)
-//           : ("none" as const),
-//       domain:
-//         process.env.NODE_ENV === "production" ? ".tlearn.africa" : ".localhost",
-//       path: "/",
-//     };
-
-//     res.cookie("accessToken", newAccessToken, {
-//       ...cookieOptions,
-//       maxAge: 30 * 60 * 1000,
-//     });
-
-//     res.json({
-//       success: true,
-//       message: "Token refreshed successfully",
-//     });
-//   },
-// );
 
 const superAdminLogout = asyncHandler(async (req: Request, res: Response) => {
   const cookieOptions = getCookieOptions();

@@ -124,6 +124,7 @@ export const requiredSuperAdmin = (
   if (req.user.role !== Role.SUPER_ADMIN) {
     throw new AppError("Super Admin access required", 403);
   }
+  // console.log(req.user);
 
   next();
 };
