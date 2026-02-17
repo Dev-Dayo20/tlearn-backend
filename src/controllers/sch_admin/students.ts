@@ -2,9 +2,16 @@ import { Request, Response } from "express";
 import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
 import { AppError } from "../../utils/AppError";
-import { createStudentSchema } from "../../middlewares/zodSchema";
+import {
+  createStudentSchema,
+  updateStudentSchema,
+} from "../../middlewares/zodSchema";
 import { uploadToCloudinary } from "../../utils/uploadImage";
 import { asyncHandler } from "../../utils/asyncHandler";
+import {
+  deleteStudentService,
+  updateStudentService,
+} from "../../services/sch-admin.services";
 
 const makePrefix = (value: string, length = 3): string => {
   return value.replace(/\s+/g, "").toUpperCase().slice(0, length);
@@ -197,3 +204,63 @@ export const getStudents = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 });
+
+export const updateStudent = asyncHandler(
+  async (req: Request, res: Response) => {
+    const school = req.school;
+    if (!school) {
+      throw new AppError("School not found", 400);
+    }
+
+    const studentId = parseInt(req.params.id as string);
+    const schoolId = school.id;
+
+    const validatedData = updateStudentSchema.safeParse(req.body);
+    if (!validatedData.success) {
+      throw new AppError("Invalid input", 400);
+    }
+
+    const { name, email, classId, armId, dateOfBirth, profilePicture } =
+      validatedData.data;
+
+    const updatedStudent = await updateStudentService({
+      studentId,
+      schoolId,
+      name,
+      email,
+      classId,
+      armId,
+      dateOfBirth,
+      profilePicture,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Student updated successfully",
+      updatedStudent,
+    });
+  },
+);
+
+export const deleteStudent = asyncHandler(
+  async (req: Request, res: Response) => {
+    const school = req.school;
+    if (!school) {
+      throw new AppError("School not found", 400);
+    }
+
+    const studentId = parseInt(req.params.id as string);
+    const schoolId = school.id;
+
+    const deletedStudent = await deleteStudentService({
+      studentId,
+      schoolId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Student deleted successfully",
+      deletedStudent,
+    });
+  },
+);

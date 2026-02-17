@@ -65,13 +65,10 @@ export const getClassesSchema = z.object({
 
 export const createTeacherSchema = z.object({
   name: z.string().min(1, "Teacher's name is required"),
-  email: z
-    .email({ message: "Invalid Email" })
-    .refine((val) => /\.(com|net|org|io|gov|edu)$/i.test(val), {
-      message: "Email must end with a valid TLD eg .com, .net...",
-    })
-    .transform((val) => val.toLowerCase()),
-  password: z.string().min(1, "Password is required"),
+  email: z.email("Invalid email address"),
+  phoneNumber: z.string().optional().nullable(),
+  profilePicture: z.string().optional().nullable().or(z.literal("")),
+  password: z.string().min(6, "Password is required"),
 });
 
 export const createStudentSchema = z.object({
@@ -107,3 +104,48 @@ export const updateMaterialSchema = z.object({
   armId: z.coerce.number().int().positive().optional().nullable(),
   subjectId: z.coerce.number().int().positive().optional().nullable(),
 });
+
+//UPDATE TEACHER INFO
+export const updateTeacherSchema = z.object({
+  name: z.string().min(1, "Teacher's name is required").optional(),
+  email: z.email("Invalid email address").optional(),
+  phoneNumber: z
+    .string()
+    .regex(/^\+?[0-9\s\-\(\)]{7,15}$/, "Invalid phone number format")
+    .optional()
+    .nullable(),
+  profilePicture: z.string().url("Invalid URL").optional().nullable(),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .optional(),
+});
+
+export const paginationQuerySchema = z.object({
+  search: z.string().optional(),
+  page: z
+    .string()
+    .optional()
+    .default("1")
+    .transform((val) => parseInt(val))
+    .pipe(z.number().min(1, "Page must be at least 1")),
+  limit: z
+    .string()
+    .optional()
+    .default("10")
+    .transform((val) => parseInt(val))
+    .pipe(z.number().min(1).max(100, "Limit cannot exceed 100")),
+});
+
+export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+
+export const updateStudentSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  email: z.email().optional().nullable().or(z.literal("")),
+  classId: z.number().int().positive().optional(),
+  armId: z.number().int().positive().optional().nullable(),
+  dateOfBirth: z.string().optional().nullable().or(z.literal("")),
+  profilePicture: z.string().url().optional().nullable().or(z.literal("")),
+});
+
+export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;

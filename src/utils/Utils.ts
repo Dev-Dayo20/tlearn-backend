@@ -50,12 +50,11 @@ function getSecretKey(): string {
 // FUNCTION TO GET COOKIE OPTIONS
 export function getCookieOptions() {
   const isProduction = process.env.NODE_ENV === "production";
-
   return {
     httpOnly: true,
     secure: true,
-    sameSite: "lax" as const, // Changed from "none"
-    domain: ".tlearn.africa", // Added back
+    sameSite: "lax" as const,
+    domain: ".tlearn.africa",
     path: "/",
   };
 }

@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prismaClient";
 import { queryWithRetry } from "../../utils/Utils";
-import { createClassSchema } from "../../middlewares/zodSchema";
 import { AppError } from "../../utils/AppError";
-import { createTeacherSchema } from "../../middlewares/zodSchema";
+import {
+  createTeacherSchema,
+  updateTeacherSchema,
+} from "../../middlewares/zodSchema";
 import bcrypt from "bcryptjs";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { updateTeacherService } from "../../services/sch-admin.services";
+import { paginationQuerySchema } from "../../middlewares/zodSchema";
 
 export const createTeacher = asyncHandler(
   async (req: Request, res: Response) => {
@@ -14,7 +18,13 @@ export const createTeacher = asyncHandler(
     if (!validateData.success) {
       throw new AppError("Invalid fields", 400);
     }
-
+    // if (!validateData.success) {
+    //   throw new AppError(
+    //     (validateData as z.SafeParseError<typeof createTeacherSchema>).error
+    //       .errors[0].message,
+    //     400,
+    //   );
+    // }
     const { name, email, password } = validateData.data;
     const school = req.school;
 
@@ -35,7 +45,7 @@ export const createTeacher = asyncHandler(
     const existingTeacher = await queryWithRetry(() =>
       prisma.user.findFirst({
         where: {
-          name: { equals: name.trim(), mode: "insensitive" },
+          name: { equals: name.trim().toLowerCase(), mode: "insensitive" },
           schoolId: req.school?.id,
           role: "TEACHER",
         },
@@ -53,7 +63,7 @@ export const createTeacher = asyncHandler(
     const newTeacher = await queryWithRetry(() =>
       prisma.user.create({
         data: {
-          name: name.trim(),
+          name: name.trim().toLowerCase(),
           email: email.toLowerCase().trim(),
           password: hashedPassword,
           role: "TEACHER",
@@ -86,27 +96,102 @@ export const getTeachers = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError("School not found", 400);
   }
 
-  const teachers = await queryWithRetry(() =>
-    prisma.user.findMany({
-      where: {
-        schoolId: school.id,
-        role: "TEACHER",
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
-      orderBy: {
-        name: "asc",
-      },
-    }),
-  );
+  const validatedQuery = paginationQuerySchema.safeParse(req.query);
+  if (!validatedQuery.success) {
+    throw new AppError("Invalid query parameters", 400);
+  }
+
+  const { search, page, limit } = validatedQuery.data;
+
+  const pageNumber = Math.max(1, page);
+  const pageSize = Math.max(1, limit);
+  const skip = (pageNumber - 1) * pageSize;
+
+  const whereConditions: any = {
+    schoolId: school.id,
+    role: "TEACHER",
+    isActive: true,
+  };
+
+  if (search && typeof search === "string") {
+    whereConditions.OR = [
+      { name: { contains: search.toLowerCase(), mode: "insensitive" } },
+      { email: { contains: search.toLowerCase(), mode: "insensitive" } },
+    ];
+  }
+
+  const [totalTeachers, teachers] = await Promise.all([
+    queryWithRetry(() => prisma.user.count({ where: whereConditions })),
+    queryWithRetry(() =>
+      prisma.user.findMany({
+        where: whereConditions,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phoneNumber: true,
+          profilePicture: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+        skip,
+        take: pageSize,
+      }),
+    ),
+  ]);
+
+  const totalPages = Math.ceil(totalTeachers / pageSize);
 
   return res.status(200).json({
     success: true,
     teachers,
+    pagination: {
+      currentPage: pageNumber,
+      pageSize,
+      totalTeachers,
+      totalPages,
+      hasNextPage: pageNumber < totalPages,
+      hasPreviousPage: pageNumber > 1,
+    },
   });
 });
+
+export const updateTeacher = asyncHandler(
+  async (req: Request, res: Response) => {
+    const school = req.school;
+    if (!school) {
+      throw new AppError("School not found", 400);
+    }
+
+    const teacherId = parseInt(req.params.id as string);
+    const schoolId = school.id;
+
+    const validatedData = updateTeacherSchema.safeParse(req.body);
+    if (!validatedData.success) {
+      throw new AppError("Invalid input", 400);
+    }
+
+    const { name, email, phoneNumber, profilePicture, password } =
+      validatedData.data;
+
+    const updatedTeacher = await updateTeacherService({
+      teacherId,
+      schoolId,
+      name,
+      email,
+      phoneNumber,
+      profilePicture,
+      password,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Teacher updated successfully",
+      updatedTeacher,
+    });
+  },
+);

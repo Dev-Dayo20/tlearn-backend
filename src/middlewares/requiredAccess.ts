@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../utils/prismaClient";
-import { AUthPayload } from "../utils/types";
 import { queryWithRetry } from "../utils/Utils";
 import { AppError } from "../utils/AppError";
 import { Role } from "@prisma/client";
@@ -128,7 +127,6 @@ export const requiredSuperAdmin = (
   if (req.user.role !== Role.SUPER_ADMIN) {
     throw new AppError("Super Admin access required", 403);
   }
-  // console.log(req.user);
 
   next();
 };

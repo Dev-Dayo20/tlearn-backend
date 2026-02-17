@@ -4,11 +4,16 @@ import { SchoolUsersLogin } from "../../controllers/sch_admin/schoolAutth";
 import { createClass } from "../../controllers/sch_admin/createClass";
 import { getClasses } from "../../controllers/sch_admin/getClasses";
 import { getClassDetails } from "../../controllers/sch_admin/getClasses";
-import { createTeacher } from "../../controllers/sch_admin/teacher";
-import { getTeachers } from "../../controllers/sch_admin/teacher";
+import {
+  createTeacher,
+  updateTeacher,
+  getTeachers,
+} from "../../controllers/sch_admin/teacher";
 import {
   createStudents,
   getStudents,
+  updateStudent,
+  deleteStudent,
 } from "../../controllers/sch_admin/students";
 import {
   createMaterial,
@@ -66,6 +71,7 @@ router.post(
   newAuthenticate,
   attachSchoolContext,
   requireSchAdmin,
+  // upload.single("profilePicture"),
   createTeacher,
 );
 
@@ -75,6 +81,14 @@ router.get(
   attachSchoolContext,
   requireSchAdmin,
   getTeachers,
+);
+
+router.patch(
+  "/teacher/:id",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  updateTeacher,
 );
 
 // ========== SCHOOL ADMIN STUDENTS ==========
@@ -101,6 +115,23 @@ router.get(
   attachSchoolContext,
   requireSchAdmin,
   getStudentAnalytics,
+);
+
+router.patch(
+  "/students/:id",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  // upload.single("profilePicture"),
+  updateStudent,
+);
+
+router.delete(
+  "/students/:id",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  deleteStudent,
 );
 
 // ========== SCHOOL ADMIN MATERIALS ==========

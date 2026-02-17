@@ -5,8 +5,17 @@ export const errorHandler = (
   err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
+  // ✅ Only log in development
+  if (process.env.NODE_ENV === "development") {
+    console.error("=== ERROR HANDLER ===");
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    console.error("Error stack:", err.stack);
+    console.error("=====================");
+  }
+
   let statusCode = 500;
   let message = "Internal server error";
 

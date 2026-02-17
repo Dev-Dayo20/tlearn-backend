@@ -132,7 +132,6 @@ export const SchoolUsersLogin = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Login successful.",
-      // accessToken: token,
       user,
     });
   },
@@ -176,10 +175,8 @@ export const refreshAccessToken = asyncHandler(
       payload.schoolId = user.schoolId;
     }
 
-    // Generate new access token
     const newAccessToken = generateSchoolUserToken(payload);
 
-    // Set new access token in cookie
     const cookieOptions = getCookieOptions();
 
     res.cookie("accessToken", newAccessToken, {

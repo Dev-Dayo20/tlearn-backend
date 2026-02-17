@@ -63,18 +63,18 @@ export const createSchoolWithAdmin = asyncHandler(
       prisma.$transaction(async (tx) => {
         const school = await tx.school.create({
           data: {
-            name: schoolName,
+            name: schoolName.toLowerCase(),
             subdomain,
             email: schoolEmail,
-            address,
-            logo: logoUrl, // Save Cloudinary URL
+            address: address?.toLowerCase(),
+            logo: logoUrl,
             isActive: true,
           },
         });
 
         const schoolAdmin = await tx.user.create({
           data: {
-            name: adminName,
+            name: adminName.toLowerCase(),
             email: adminEmail,
             password: hashedPassword,
             role: Role.ADMIN,

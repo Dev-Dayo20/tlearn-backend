@@ -31,10 +31,11 @@ model User {
   id               Int             @id @default(autoincrement())
   name             String
   email            String?         @unique
+  phoneNumber      String?         @unique
   password         String?
   profilePicture   String?
   dateOfBirth      DateTime?
-  role             Role            @default(SUPER_ADMIN)
+  role             Role            @default(TEACHER)
   studentId        String?         @unique
   schoolId         Int?
   classId          Int?
