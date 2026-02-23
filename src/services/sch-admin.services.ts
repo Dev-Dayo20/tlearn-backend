@@ -23,7 +23,6 @@ export const getStudentForAnalytics = async ({
   schoolId,
   studentId,
 }: GetStudentAnalyticsArgs) => {
-  // 1️⃣ Get student details
   const student = await queryWithRetry(() =>
     prisma.user.findFirst({
       where: {
@@ -39,6 +38,7 @@ export const getStudentForAnalytics = async ({
         profilePicture: true,
         isActive: true,
         createdAt: true,
+        classId: true,
         class: {
           select: {
             id: true,
@@ -54,73 +54,91 @@ export const getStudentForAnalytics = async ({
     }),
   );
 
-  if (!student) {
+  if (!student || !student.classId) {
     throw new AppError("Student not found", 404);
   }
 
-  // 2️⃣ Get total materials for student's class
-  const totalMaterials = await queryWithRetry(() =>
-    prisma.video.count({
-      where: {
-        classId: student?.class?.id,
-        schoolId,
-      },
-    }),
-  );
+  const [totalMaterials, completedCount, classMaterials, progressTimelineData] =
+    await Promise.all([
+      // Total materials for class
+      prisma.video.count({
+        where: {
+          classId: student.classId,
+          schoolId,
+        },
+      }),
 
-  // 3️⃣ Get completed materials count
-  const completedCount = await queryWithRetry(() =>
-    prisma.videoProgress.count({
-      where: {
-        studentId: student.id,
-        isCompleted: true,
-      },
-    }),
-  );
+      // Completed count
+      prisma.videoProgress.count({
+        where: {
+          studentId: student.id,
+          isCompleted: true,
+        },
+      }),
 
-  // 4️⃣ Get materials with progress
-  const classMaterials = await queryWithRetry(() =>
-    prisma.video.findMany({
-      where: {
-        classId: student?.class?.id,
-        schoolId,
-      },
-      select: {
-        id: true,
-        title: true,
-        duration: true,
-        uploadedAt: true,
-        subject: {
-          select: {
-            id: true,
-            name: true,
+      // Class materials with progress
+      prisma.video.findMany({
+        where: {
+          classId: student.classId,
+          schoolId,
+        },
+        select: {
+          id: true,
+          title: true,
+          duration: true,
+          uploadedAt: true,
+          subject: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          videoProgresses: {
+            where: {
+              studentId: student.id,
+            },
+            select: {
+              progressPercent: true,
+              isCompleted: true,
+              watchedDuration: true,
+              lastWatchedAt: true,
+            },
+            take: 1,
           },
         },
-        videoProgresses: {
-          where: {
-            studentId: student.id,
-          },
-          select: {
-            progressPercent: true,
-            isCompleted: true,
-            watchedDuration: true,
-            lastWatchedAt: true,
+        orderBy: {
+          uploadedAt: "desc",
+        },
+      }),
+
+      // Progress timeline (last 8 weeks in ONE query)
+      prisma.videoProgress.findMany({
+        where: {
+          studentId: student.id,
+          lastWatchedAt: {
+            gte: new Date(Date.now() - 8 * 7 * 24 * 60 * 60 * 1000),
           },
         },
-      },
-      orderBy: {
-        uploadedAt: "desc",
-      },
-    }),
-  );
+        select: {
+          progressPercent: true,
+          isCompleted: true,
+          lastWatchedAt: true,
+        },
+        orderBy: {
+          lastWatchedAt: "asc",
+        },
+      }),
+    ]);
 
   return {
     student,
     stats: {
       totalMaterials,
       completedCount,
+      avgProgress: 0, // Calculate if needed
     },
     classMaterials,
+    progressTimelineData,
   };
 };
 
@@ -280,4 +298,273 @@ export const deleteStudentService = async ({
   );
 
   return deletedStudent;
+};
+
+export type CreateSubjectArgs = {
+  name: string;
+  classId: number;
+  teacherId: number | null;
+  schoolId: number;
+};
+
+export const createSubjectService = async ({
+  name,
+  classId,
+  teacherId,
+  schoolId,
+}: CreateSubjectArgs) => {
+  await validateExists(
+    () =>
+      prisma.class.findFirst({
+        where: { id: classId, schoolId },
+      }),
+    "Class not found",
+  );
+
+  if (teacherId) {
+    await validateExists(
+      () =>
+        prisma.user.findFirst({
+          where: { id: teacherId, schoolId, role: "TEACHER", isActive: true },
+        }),
+      "Teacher not found",
+    );
+  }
+
+  const existingSubject = await queryWithRetry(() =>
+    prisma.subject.findFirst({
+      where: {
+        name: name.trim().toLowerCase(),
+        classId: classId,
+      },
+    }),
+  );
+
+  if (existingSubject) {
+    throw new AppError("Subject already exists in this class", 409);
+  }
+
+  const subject = await queryWithRetry(() =>
+    prisma.subject.create({
+      data: {
+        name: name.trim().toLowerCase(),
+        classId: classId,
+        teacherId: teacherId ? teacherId : null,
+      },
+      select: {
+        id: true,
+        name: true,
+        classId: true,
+        teacherId: true,
+        createdAt: true,
+        class: {
+          select: {
+            name: true,
+          },
+        },
+        teacher: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+  );
+  return subject;
+};
+
+export const getAllSubjectsForDropdown = async (schoolId: number) => {
+  const subjects = await queryWithRetry(() =>
+    prisma.subject.findMany({
+      where: {
+        class: {
+          schoolId: schoolId,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        classId: true,
+        teacherId: true,
+        createdAt: true,
+        class: {
+          select: {
+            name: true,
+          },
+        },
+        teacher: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+  );
+  return subjects;
+};
+
+export type GetAllSubjectsPaginationArgs = {
+  schoolId: number;
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: number;
+};
+
+export const getAllSubjectsPagination = async ({
+  schoolId,
+  page = 1,
+  limit = 10,
+  search,
+  classId,
+}: GetAllSubjectsPaginationArgs) => {
+  const skip = (page - 1) * limit;
+
+  const whereConditions: any = {
+    class: {
+      schoolId: schoolId,
+    },
+    ...(classId && { classId }),
+    ...(search && {
+      name: { contains: search, mode: "insensitive" as const },
+    }),
+  };
+
+  const [totalSubjects, subjects] = await Promise.all([
+    queryWithRetry(() => prisma.subject.count({ where: whereConditions })),
+    queryWithRetry(() =>
+      prisma.subject.findMany({
+        where: whereConditions,
+        select: {
+          id: true,
+          name: true,
+          classId: true,
+          teacherId: true,
+          createdAt: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          teacher: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ),
+  ]);
+
+  const totalPages = Math.ceil(totalSubjects / limit);
+
+  return {
+    subjects,
+    pagination: {
+      currentPage: page,
+      pageSize: limit,
+      totalSubjects,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
+  };
+};
+
+export const updateSubjectService = async ({
+  subjectId,
+  schoolId,
+  name,
+  classId,
+  teacherId,
+}: {
+  subjectId: number;
+  schoolId: number;
+  name?: string;
+  classId?: number;
+  teacherId?: number | null;
+}) => {
+  const subject = await validateExists(
+    () =>
+      prisma.subject.findFirst({
+        where: { id: subjectId, class: { schoolId } },
+      }),
+    "Subject not found",
+  );
+
+  // ✅ Check for duplicate name if name is being updated
+  const targetClassId = classId ?? subject.classId;
+  if (name) {
+    const existingSubject = await queryWithRetry(() =>
+      prisma.subject.findFirst({
+        where: {
+          name: name.trim().toLowerCase(),
+          classId: targetClassId,
+          NOT: { id: subjectId },
+        },
+      }),
+    );
+
+    if (existingSubject) {
+      throw new AppError(
+        "Subject with this name already exists in this class",
+        409,
+      );
+    }
+  }
+
+  if (classId) {
+    await validateExists(
+      () =>
+        prisma.class.findFirst({
+          where: { id: classId, schoolId },
+        }),
+      "Class not found",
+    );
+  }
+
+  if (teacherId) {
+    await validateExists(
+      () =>
+        prisma.user.findFirst({
+          where: { id: teacherId, schoolId, role: "TEACHER", isActive: true },
+        }),
+      "Teacher not found",
+    );
+  }
+
+  const updatedSubject = await queryWithRetry(() =>
+    prisma.subject.update({
+      where: { id: subjectId },
+      data: {
+        ...(name && { name: name.trim().toLowerCase() }),
+        ...(classId && { classId }),
+        ...(teacherId !== undefined && { teacherId }),
+      },
+      select: {
+        id: true,
+        name: true,
+        classId: true,
+        teacherId: true,
+        createdAt: true,
+        class: {
+          select: {
+            name: true,
+          },
+        },
+        teacher: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+  );
+
+  return updatedSubject;
 };

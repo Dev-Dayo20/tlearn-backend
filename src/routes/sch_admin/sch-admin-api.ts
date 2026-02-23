@@ -24,12 +24,25 @@ import {
 } from "../../controllers/sch_admin/materials";
 import { getDashboardStats } from "../../controllers/sch_admin/dashboard";
 import { classes } from "../../controllers/sch_admin/createClass";
+import {
+  createSubject,
+  getAllSubjectsForPagination,
+  getAllSubjects,
+  updateSubject,
+} from "../../controllers/sch_admin/subject";
 
 // ========== MIDDLEWARES ==========
+import { z } from "zod";
 import { requireSchAdmin } from "../../middlewares/requiredAccess";
 import { upload, uploadVideo } from "../../middlewares/upload";
 import { newAuthenticate } from "../../middlewares/auth";
 import { attachSchoolContext } from "../../middlewares/loginMiddleware";
+import { validate } from "../../lib/validators";
+import {
+  createSubjectSchema,
+  getSubjectsPaginationSchema,
+  updateSubjectSchema,
+} from "../../middlewares/zodSchema";
 
 const router = Router();
 
@@ -89,6 +102,48 @@ router.patch(
   attachSchoolContext,
   requireSchAdmin,
   updateTeacher,
+);
+
+//======== SCHOOL ADMIN SUBJECT ===========
+router.post(
+  "/subject",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  validate(createSubjectSchema),
+  createSubject,
+);
+router.get(
+  "/subjects",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  validate(getSubjectsPaginationSchema, "query"),
+  getAllSubjectsForPagination,
+);
+
+router.get(
+  "/subjects/all",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  getAllSubjects,
+);
+
+const idParamSchema = z.object({
+  id: z
+    .string()
+    .regex(/^\d+$/)
+    .transform((val: string) => parseInt(val)),
+});
+router.patch(
+  "/subject/:id",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  validate(idParamSchema, "params"),
+  validate(updateSubjectSchema),
+  updateSubject,
 );
 
 // ========== SCHOOL ADMIN STUDENTS ==========

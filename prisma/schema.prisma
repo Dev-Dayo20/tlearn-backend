@@ -54,6 +54,8 @@ model User {
   @@index([classId])
   @@index([armId])
   @@index([studentId])
+  @@index([schoolId, role, isActive]) // ✅ ADD THIS (for filtering students by school and status)
+  @@index([classId, role]) // ✅ ADD THIS (for getting students in a class)
 }
 
 model Class {
@@ -72,6 +74,7 @@ model Class {
   videos    Video[]
 
   @@index([schoolId])
+  @@index([schoolId, isActive])
 }
 
 model Subject {
@@ -86,6 +89,7 @@ model Subject {
   materials Video[]
 
   @@index([classId])
+  @@index([teacherId])
 }
 
 model Arm {
@@ -119,7 +123,7 @@ model Video {
   videoProgresses VideoProgress[]
 
   @@index([schoolId])
-  @@index([classId])
+  @@index([classId, uploadedAt])
 }
 
 model Subscription {
@@ -153,6 +157,9 @@ model VideoProgress {
   @@unique([studentId, videoId]) // Each student has one progress record per video
   @@index([studentId])
   @@index([videoId])
+  @@index([lastWatchedAt])
+  @@index([studentId, lastWatchedAt])
+  @@index([studentId, isCompleted])
 }
 
 enum Role {

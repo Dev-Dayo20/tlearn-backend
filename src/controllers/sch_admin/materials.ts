@@ -228,7 +228,7 @@ export const updateMaterial = asyncHandler(
           id: materialId,
           schoolId: school.id,
         },
-      }),
+      }), 
     );
     if (!existingMaterial) {
       throw new AppError("Material not found", 404);
@@ -465,14 +465,11 @@ export const getStudentAnalytics = asyncHandler(
     const studentId = parseInt(req.params.id as string);
 
     // Get all student data in one call
-    const { student, stats, classMaterials } = await getStudentForAnalytics({
-      schoolId: school.id,
-      studentId,
-    });
-
-    if (!student) {
-      throw new AppError("Student not found", 404);
-    }
+    const { student, stats, classMaterials, progressTimelineData } =
+      await getStudentForAnalytics({
+        schoolId: school.id,
+        studentId,
+      });
 
     // Calculate overall progress
     const progress =
@@ -539,56 +536,42 @@ export const getStudentAnalytics = asyncHandler(
       }),
     );
 
-    // Progress timeline (last 8 weeks)
-    const weeksAgo = 8;
-    const progressTimeline = await Promise.all(
-      Array.from({ length: weeksAgo }, async (_, i) => {
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - (weeksAgo - i) * 7);
+    // ✅ Progress timeline (process in memory - no more DB queries!)
+    const progressTimeline = Array.from({ length: 8 }, (_, i) => {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - (8 - i) * 7);
 
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
 
-        const weeklyProgress = await queryWithRetry(() =>
-          prisma.videoProgress.findMany({
-            where: {
-              studentId: student.id,
-              lastWatchedAt: {
-                gte: weekStart,
-                lt: weekEnd,
-              },
-            },
-            select: {
-              progressPercent: true,
-              isCompleted: true,
-            },
-          }),
-        );
+      // Filter in memory
+      const weeklyProgress = progressTimelineData.filter(
+        (p) => p.lastWatchedAt >= weekStart && p.lastWatchedAt < weekEnd,
+      );
 
-        const avgProgress =
-          weeklyProgress.length > 0
-            ? Math.round(
-                weeklyProgress.reduce((sum, p) => sum + p.progressPercent, 0) /
-                  weeklyProgress.length,
-              )
-            : 0;
+      const avgProgress =
+        weeklyProgress.length > 0
+          ? Math.round(
+              weeklyProgress.reduce((sum, p) => sum + p.progressPercent, 0) /
+                weeklyProgress.length,
+            )
+          : 0;
 
-        const completionRate =
-          weeklyProgress.length > 0
-            ? Math.round(
-                (weeklyProgress.filter((p) => p.isCompleted).length /
-                  weeklyProgress.length) *
-                  100,
-              )
-            : 0;
+      const completionRate =
+        weeklyProgress.length > 0
+          ? Math.round(
+              (weeklyProgress.filter((p) => p.isCompleted).length /
+                weeklyProgress.length) *
+                100,
+            )
+          : 0;
 
-        return {
-          week: `Week ${i + 1}`,
-          progress: avgProgress,
-          completion: completionRate,
-        };
-      }),
-    );
+      return {
+        week: `Week ${i + 1}`,
+        progress: avgProgress,
+        completion: completionRate,
+      };
+    });
 
     res.status(200).json({
       success: true,

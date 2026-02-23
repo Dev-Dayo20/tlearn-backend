@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import dotenv from "dotenv";
 import helmet from "helmet";
 dotenv.config();
@@ -73,6 +74,7 @@ app.use(
   }),
 );
 
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
