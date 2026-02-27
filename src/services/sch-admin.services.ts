@@ -568,3 +568,72 @@ export const updateSubjectService = async ({
 
   return updatedSubject;
 };
+
+export const assignTeacherToClassService = async ({
+  teacherId,
+  schoolId,
+  subjectId,
+}: {
+  teacherId: number;
+  schoolId: number;
+  subjectId: number;
+}) => {
+  await validateExists(
+    () =>
+      prisma.user.findFirst({
+        where: { id: teacherId, schoolId, role: "TEACHER", isActive: true },
+      }),
+    "Teacher not found",
+  );
+
+  const subject = await validateExists(
+    () =>
+      prisma.subject.findFirst({
+        where: { id: subjectId, class: { schoolId } },
+        include: {
+          teacher: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      }),
+    "Subject not found",
+  );
+  if (subject.teacherId) {
+    throw new AppError(
+      `This subject is already assigned to ${subject?.teacher?.name || "another teacher"}`,
+      400,
+    );
+  }
+
+  const updatedTeacher = await queryWithRetry(() =>
+    prisma.subject.update({
+      where: { id: subjectId },
+      data: {
+        teacherId: teacherId,
+      },
+      select: {
+        id: true,
+        name: true,
+        classId: true,
+        teacherId: true,
+        createdAt: true,
+        class: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+  );
+
+  return updatedTeacher;
+};

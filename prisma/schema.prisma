@@ -54,8 +54,8 @@ model User {
   @@index([classId])
   @@index([armId])
   @@index([studentId])
-  @@index([schoolId, role, isActive]) // ✅ ADD THIS (for filtering students by school and status)
-  @@index([classId, role]) // ✅ ADD THIS (for getting students in a class)
+  @@index([schoolId, role, isActive])
+  @@index([classId, role])
 }
 
 model Class {

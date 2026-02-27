@@ -228,3 +228,13 @@ export const getSubjectsPaginationSchema = z
 export type GetSubjectsPaginationQuery = z.infer<
   typeof getSubjectsPaginationSchema
 >;
+
+export const assignTeacherToClassSchema = z
+  .object({
+    subjectId: z.number().int().positive("Invalid subject ID"),
+  })
+  .strict();
+
+export type AssignTeacherToClassInput = z.infer<
+  typeof assignTeacherToClassSchema
+>;

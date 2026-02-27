@@ -8,7 +8,10 @@ import {
 } from "../../middlewares/zodSchema";
 import bcrypt from "bcryptjs";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { updateTeacherService } from "../../services/sch-admin.services";
+import {
+  assignTeacherToClassService,
+  updateTeacherService,
+} from "../../services/sch-admin.services";
 import { paginationQuerySchema } from "../../middlewares/zodSchema";
 
 export const createTeacher = asyncHandler(
@@ -191,6 +194,32 @@ export const updateTeacher = asyncHandler(
     return res.status(200).json({
       success: true,
       message: "Teacher updated successfully",
+      updatedTeacher,
+    });
+  },
+);
+
+export const assignTeacherToClass = asyncHandler(
+  async (req: Request, res: Response) => {
+    const school = req.school;
+    if (!school) {
+      throw new AppError("School not found", 400);
+    }
+
+    const teacherId = parseInt(req.params.id as string);
+    const schoolId = school.id;
+
+    const { subjectId } = req.body;
+
+    const updatedTeacher = await assignTeacherToClassService({
+      teacherId,
+      schoolId,
+      subjectId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Teacher assigned to class successfully",
       updatedTeacher,
     });
   },

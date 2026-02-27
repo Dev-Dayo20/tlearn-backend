@@ -8,6 +8,7 @@ import {
   createTeacher,
   updateTeacher,
   getTeachers,
+  assignTeacherToClass,
 } from "../../controllers/sch_admin/teacher";
 import {
   createStudents,
@@ -42,9 +43,17 @@ import {
   createSubjectSchema,
   getSubjectsPaginationSchema,
   updateSubjectSchema,
+  assignTeacherToClassSchema,
 } from "../../middlewares/zodSchema";
 
 const router = Router();
+
+const idParamSchema = z.object({
+  id: z
+    .string()
+    .regex(/^\d+$/)
+    .transform((val: string) => parseInt(val)),
+});
 
 // ========== GET SCHOOL FROM DOMAIN ==========
 router.get("/school/:subdomain", getSchoolFromDomain);
@@ -104,6 +113,16 @@ router.patch(
   updateTeacher,
 );
 
+router.patch(
+  "/teacher/:id/assign",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  validate(idParamSchema, "params"),
+  validate(assignTeacherToClassSchema),
+  assignTeacherToClass,
+);
+
 //======== SCHOOL ADMIN SUBJECT ===========
 router.post(
   "/subject",
@@ -130,12 +149,6 @@ router.get(
   getAllSubjects,
 );
 
-const idParamSchema = z.object({
-  id: z
-    .string()
-    .regex(/^\d+$/)
-    .transform((val: string) => parseInt(val)),
-});
 router.patch(
   "/subject/:id",
   newAuthenticate,
