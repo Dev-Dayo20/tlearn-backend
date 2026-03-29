@@ -145,6 +145,7 @@ export const getStudents = asyncHandler(async (req: Request, res: Response) => {
   const whereConditions: any = {
     schoolId: school.id,
     role: "STUDENT",
+    isActive: true,
   };
 
   if (classId) {

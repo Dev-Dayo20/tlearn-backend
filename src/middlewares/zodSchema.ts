@@ -238,3 +238,9 @@ export const assignTeacherToClassSchema = z
 export type AssignTeacherToClassInput = z.infer<
   typeof assignTeacherToClassSchema
 >;
+
+export const removeTeacherFromSubjectSchema = z
+  .object({
+    subjectId: z.number().int().positive("Invalid subject ID"),
+  })
+  .strict();

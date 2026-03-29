@@ -637,3 +637,113 @@ export const assignTeacherToClassService = async ({
 
   return updatedTeacher;
 };
+
+export const removeTeacherFromSubjectService = async ({
+  teacherId,
+  schoolId,
+  subjectId,
+}: {
+  teacherId: number;
+  schoolId: number;
+  subjectId: number;
+}) => {
+  await validateExists(
+    () =>
+      prisma.user.findFirst({
+        where: { id: teacherId, schoolId, role: "TEACHER", isActive: true },
+      }),
+    "Teacher not found",
+  );
+
+  const subject = await validateExists(
+    () =>
+      prisma.subject.findFirst({
+        where: {
+          id: subjectId,
+          class: { schoolId },
+          teacherId: teacherId, // Must be assigned to this teacher
+        },
+        select: {
+          id: true,
+          name: true,
+          teacherId: true,
+          teacher: {
+            select: { name: true },
+          },
+        },
+      }),
+    "Subject not found or not assigned to this teacher",
+  );
+
+  // Remove the teacher by setting teacherId to null
+  const updatedSubject = await queryWithRetry(() =>
+    prisma.subject.update({
+      where: { id: subjectId },
+      data: {
+        teacherId: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        classId: true,
+        teacherId: true,
+        createdAt: true,
+        class: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+  );
+
+  return updatedSubject;
+};
+
+export const getTeacherByIdService = async ({
+  teacherId,
+  schoolId,
+}: {
+  teacherId: number;
+  schoolId: number;
+}) => {
+  const teacher = await validateExists(
+    () =>
+      prisma.user.findFirst({
+        where: {
+          id: teacherId,
+          schoolId,
+          role: "TEACHER",
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phoneNumber: true,
+          profilePicture: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          // Get all subjects this teacher teaches
+          teachingSubjects: {
+            select: {
+              id: true,
+              name: true,
+              classId: true,
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    "Teacher not found",
+  );
+
+  return teacher;
+};

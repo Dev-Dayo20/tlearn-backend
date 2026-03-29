@@ -9,6 +9,8 @@ import {
   updateTeacher,
   getTeachers,
   assignTeacherToClass,
+  removeTeacherFromSubject,
+  getTeacherById,
 } from "../../controllers/sch_admin/teacher";
 import {
   createStudents,
@@ -44,16 +46,19 @@ import {
   getSubjectsPaginationSchema,
   updateSubjectSchema,
   assignTeacherToClassSchema,
+  removeTeacherFromSubjectSchema,
 } from "../../middlewares/zodSchema";
 
 const router = Router();
 
-const idParamSchema = z.object({
-  id: z
-    .string()
-    .regex(/^\d+$/)
-    .transform((val: string) => parseInt(val)),
-});
+const idParamSchema = z
+  .object({
+    id: z
+      .string()
+      .regex(/^\d+$/)
+      .transform((val: string) => parseInt(val)),
+  })
+  .strict();
 
 // ========== GET SCHOOL FROM DOMAIN ==========
 router.get("/school/:subdomain", getSchoolFromDomain);
@@ -121,6 +126,25 @@ router.patch(
   validate(idParamSchema, "params"),
   validate(assignTeacherToClassSchema),
   assignTeacherToClass,
+);
+
+router.patch(
+  "/teacher/:id/unassign",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  validate(idParamSchema, "params"),
+  validate(removeTeacherFromSubjectSchema),
+  removeTeacherFromSubject,
+);
+
+router.get(
+  "/teacher/:id",
+  newAuthenticate,
+  attachSchoolContext,
+  requireSchAdmin,
+  validate(idParamSchema, "params"),
+  getTeacherById,
 );
 
 //======== SCHOOL ADMIN SUBJECT ===========
