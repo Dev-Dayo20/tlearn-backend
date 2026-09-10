@@ -52,9 +52,9 @@ export function getCookieOptions() {
   const isProduction = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
-    secure: true,
+    secure: isProduction,
     sameSite: "lax" as const,
-    domain: ".tlearn.africa",
+    domain: isProduction ? ".tlearn.africa" : undefined,
     path: "/",
   };
 }

@@ -16,8 +16,8 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
 };
 
 export const upload = multer({
-  storage, // Memory storage - no disk writes!
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter,
 });
 
@@ -35,7 +35,7 @@ const videoFilter = (req: any, file: Express.Multer.File, cb: any) => {
 };
 
 export const uploadVideo = multer({
-  storage, 
+  storage,
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
   fileFilter: videoFilter,
 });

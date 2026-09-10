@@ -63,7 +63,7 @@ export const getClassesSchema = z
       .enum(["name", "createdAt", "updatedAt"])
       .optional()
       .default("createdAt"),
-    sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+    sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
   })
   .strict();
 
@@ -244,3 +244,32 @@ export const removeTeacherFromSubjectSchema = z
     subjectId: z.number().int().positive("Invalid subject ID"),
   })
   .strict();
+
+export const getStudentLessonsSchema = z
+  .object({
+    page: z
+      .string()
+      .optional()
+      .default("1")
+      .transform((val) => parseInt(val))
+      .pipe(z.number().int().min(1, "Page must be at least 1")),
+    limit: z
+      .string()
+      .optional()
+      .default("12")
+      .transform((val) => parseInt(val))
+      .pipe(
+        z.number().int().min(1).max(50, "Limit cannot exceed 50"),
+      ),
+    search: z.string().max(100, "Search query too long").trim().optional(),
+    subject: z.string().max(100).trim().optional(),
+    type: z.string().max(50, "Type query too long").trim().optional(),
+    sortBy: z
+      .enum(["date", "title", "progress"])
+      .optional()
+      .default("date"),
+    sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+  })
+  .strict();
+
+export type GetStudentLessonsQuery = z.infer<typeof getStudentLessonsSchema>;

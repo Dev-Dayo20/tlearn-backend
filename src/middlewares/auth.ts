@@ -41,7 +41,11 @@ export const authenticate = asyncHandler(
 
 export const newAuthenticate = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies.accessToken;
+    let token = req.cookies?.accessToken;
+
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.substring(7);
+    }
 
     if (!token) {
       throw new AppError("No token provided", 401);

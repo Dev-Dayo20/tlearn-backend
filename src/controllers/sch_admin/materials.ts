@@ -399,18 +399,41 @@ export const updateVideoProgress = asyncHandler(
     const { watchedDuration, videoDuration } = req.body;
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw new AppError("Authentication required", 401);
     }
 
-    if (!videoId) {
-      throw new AppError("Video ID is required", 400);
+    if (user.role !== "STUDENT") {
+      throw new AppError("Student access required", 403);
     }
 
-    if (!watchedDuration || !videoDuration) {
+    if (!videoId || isNaN(videoId)) {
+      throw new AppError("Valid video ID is required", 400);
+    }
+
+    if (
+      typeof watchedDuration !== "number" ||
+      typeof videoDuration !== "number" ||
+      watchedDuration < 0 ||
+      videoDuration <= 0
+    ) {
       throw new AppError(
-        "Watched duration and video duration are required",
+        "Valid watchedDuration and videoDuration (numbers) are required",
         400,
       );
+    }
+
+    // Verify video exists and belongs to the student's school
+    const video = await queryWithRetry(() =>
+      prisma.video.findFirst({
+        where: {
+          id: videoId,
+          schoolId: user.schoolId,
+        },
+      }),
+    );
+
+    if (!video) {
+      throw new AppError("Video not found or unauthorized", 404);
     }
 
     // Calculate progress percentage
@@ -432,7 +455,7 @@ export const updateVideoProgress = asyncHandler(
           },
         },
         update: {
-          watchedDuration,
+          watchedDuration: Math.round(watchedDuration),
           progressPercent,
           isCompleted,
           lastWatchedAt: new Date(),
@@ -440,7 +463,7 @@ export const updateVideoProgress = asyncHandler(
         create: {
           studentId: user.id,
           videoId: videoId,
-          watchedDuration,
+          watchedDuration: Math.round(watchedDuration),
           progressPercent,
           isCompleted,
         },

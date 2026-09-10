@@ -82,6 +82,7 @@ export const getDashboardStats = asyncHandler(
               },
             },
           },
+          orderBy: { createdAt: "asc" },
         }),
       ),
 

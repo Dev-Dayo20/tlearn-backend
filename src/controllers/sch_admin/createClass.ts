@@ -88,7 +88,7 @@ export const classes = asyncHandler( async (req: Request, res: Response) => {
         subjects: true,
         teacher: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
     }),
   );
   res.status(200).json({
